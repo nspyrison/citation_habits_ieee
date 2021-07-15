@@ -1,64 +1,26 @@
-##required libraries
-library(osfr)
-library(tidyverse)
-library(here)
-library(psych)
-library(MOTE)
-library(lmerTest)
-library(lavaan)
-library(semTools)
-library(broom)
-library(tidyLPA)
-library(semPlot)
+## required libraries
+require("tidyverse")
+require("skimr")
+##
+require(psych)
+require(MOTE)
+require(lmerTest)
+require(lavaan)
+require(semTools)
+require(broom)
+require(tidyLPA)
+require(semPlot)
 
-## reading in data
-osf_retrieve_file("https://osf.io/86upq/") %>% 
-  osf_download()
+## read the data
+dat <- readr::read_csv("./data/clean_demo_likert.csv")
 
-all_survey_data <- read_csv(here::here('cleaned_data.csv'), col_types = cols(.default = col_number(),
-                                                                         StartDate = col_datetime(format = '%m/%d/%y %H:%M'),
-                                                                         EndDate = col_datetime(format = '%m/%d/%y %H:%M'),
-                                                                         ResponseId = col_character(),
-                                                                         position_7_TEXT = col_character(), 
-                                                                         familiar = col_factor(),
-                                                                         preprints_submitted = col_factor(),
-                                                                         preprints_used = col_factor(),
-                                                                         position = col_factor(),
-                                                                         acad_career_stage = col_factor(),
-                                                                         country = col_factor(),
-                                                                         continent = col_factor(),
-                                                                         discipline = col_character(),
-                                                                         discipline_specific = col_character(),
-                                                                         discipline_other = col_character(),
-                                                                         bepress_tier1 = col_character(),
-                                                                         bepress_tier2 = col_character(),
-                                                                         bepress_tier3 = col_character(),
-                                                                         discipline_collapsed = col_factor(),
-                                                                         how_heard = col_character(),
-                                                                         hdi_level = col_factor(),
-                                                                         age = col_character())) %>%
-                mutate(hdi_level = fct_relevel(hdi_level, c('low', 'medium', 'high', 'very high')),
-                       preprints_used = recode_factor(preprints_used, `Not sure` = NA_character_),
-                       preprints_used = fct_relevel(preprints_used, c('No', 'Yes, once', 'Yes, a few times', 'Yes, many times')),
-                       preprints_submitted = recode_factor(preprints_submitted, `Not sure` = NA_character_),
-                       preprints_submitted = fct_relevel(preprints_submitted, c('No', 'Yes, once', 'Yes, a few times', 'Yes, many times')),
-                       familiar = fct_relevel(familiar, c('Not familiar at all', 'Slightly familiar', 'Moderately familiar', 'Very familiar', 'Extremely familiar')),
-                       acad_career_stage = fct_relevel(acad_career_stage, c('Grad Student', 'Post doc', 'Assist Prof', 'Assoc Prof', 'Full Prof'))) %>%
-                mutate(hdi_level = fct_explicit_na(hdi_level, '(Missing)'),
-                       familiar = fct_explicit_na(familiar, '(Missing)'),
-                       discipline_collapsed = fct_explicit_na(discipline_collapsed, '(Missing)')) %>%
-                mutate(missing_qs = rowSums(is.na(.)))
+dim(dat)
+dat %>% as.data.frame() %>% skimr::skim()
+
 
 #### basic sample characteristics ####
 
 # total sample who consented
-nrow(all_survey_data)
-
-#percentage of respondents who only consented
-round(100*sum(all_survey_data$missing_qs == 54)/nrow(all_survey_data), 2)
-
-#for those who answered 1 question, attrition rate
-round(100 * sum(all_survey_data$missing_qs < 54 & all_survey_data$Progress != 100)/sum(all_survey_data$missing_qs < 54), 2)
 
 #number who answered at least 1 question after consent
 sum(all_survey_data$missing_qs < 54)
