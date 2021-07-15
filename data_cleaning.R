@@ -147,7 +147,7 @@ clean_demo_likert <- clean %>% ## Demographic and 5 pt likert scale data
                 !"other comments text") ## ~col 37
 
 ## Write data -----
-readr::write_csv(clean_freeform,    "./data/clean_freeform.csv")
-readr::write_csv(clean_demo_likert, "./data/clean_demo_likert.csv")
+readr::write_rds(clean_freeform,    "./data/clean_freeform.rds")
+readr::write_rds(clean_demo_likert, "./data/clean_demo_likert.rds")
 
 

@@ -12,11 +12,27 @@ require(tidyLPA)
 require(semPlot)
 
 ## read the data
-dat <- readr::read_csv("./data/clean_demo_likert.csv")
+dat <- readr::read_rds("./data/clean_demo_likert.rds")
 
 dim(dat)
-dat %>% as.data.frame() %>% skimr::skim()
+dat %>% skimr::skim()
+str(dat)
 
+df <- data.frame(q1 = factor(letters[1:5], levels = letters[1:5]),
+                 q2 = factor(letters[1:5], levels = letters[1:5]))
+dat[, 4:12] 
+l_df <- df %>% likert() ## section 1
+class(l_df)
+plot(l_df)
+
+require("likert")
+data(pisaitems)
+items29 <- pisaitems[,substr(names(pisaitems), 1,5) == 'ST25Q']
+names(items29) <- c("Magazines", "Comic books", "Fiction", 
+                    "Non-fiction books", "Newspapers")
+l29 <- likert(items29)
+summary(l29)
+plot(l29)
 
 #### basic sample characteristics ####
 
