@@ -4,14 +4,14 @@ require("skimr")
 require("likert")
 require("corrplot")
 ##
-require(psych)
-require(MOTE)
-require(lmerTest)
-require(lavaan)
-require(semTools)
-require(broom)
-require(tidyLPA)
-require(semPlot)
+# require(psych)
+# require(MOTE)
+# require(lmerTest)
+# require(lavaan)
+# require(semTools)
+# require(broom)
+# require(tidyLPA)
+# require(semPlot)
 
 ## read the data ------
 dat <- readr::read_rds("./data/clean_survey_pilot.rds")
@@ -54,13 +54,15 @@ ggsave("likert_section1.pdf", likert_out1, "pdf", "figures",
 
 
 ## Correlation plots mock ups -----
-pal = hcl.colors(10, "OrGrGr", rev = TRUE)
+path <- "./figures/"
 corr_s1 <- cor(mtcars) ## correlation for pilot is too sparse
-corr_out1 <- corrplot.mixed(corr_s1, lower = 'number', upper = 'ellipse',
-                            order = 'FPC' ## "AOE", "FPC", "hclust"
-)
-ggsave("corr_section1.pdf", corr_out1, "pdf", "figures",
-       width = 3, height = 3, units = "in")
+name <- "corr_s1.pdf"
+pdf(name)
+corrplot.mixed(corr_s1, lower = 'number', upper = 'ellipse',
+                            order = 'FPC') ## "AOE", "FPC", "hclust"
+dev.off()
+file.copy(name, to = paste0(path, name), overwrite = TRUE)
+file.remove(name)
 
 ### Other corrplot thoughts & options
 # corrplot(corr_s1, method = 'number')

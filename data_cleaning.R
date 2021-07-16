@@ -18,7 +18,7 @@ position_lvls <- c("Graduate Student (Masters, PhD)",
 s1_lvls <- c("Never", "Rarely", "Sometimes", "Frequently", "Always")
 s23_lvls <- c("Not at all important", "Slightly important", "Moderately important", "Very important", "Extremely important")
 y1_lvls <- c("No additional scrutiny", "Some additional scrutiny", "Moderate additional scrutiny", "A lot of additional scrutiny", "Highest additional scrutiny")
-y2_lvls <- c("Not correlated", "Weak positive correlation", "Medium positive correlation", "Fairly high positive correlation", "Strong positive correlatati")
+y2_lvls <- c("Not correlated", "Weak positive correlation", "Medium positive correlation", "Fairly high positive correlation", "Strong positive correlation")
 
 ## Deal with stubborn cases:
 raw$`...and how often you use it` <- 

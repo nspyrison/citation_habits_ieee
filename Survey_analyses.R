@@ -199,6 +199,8 @@ credibility_data_long <- survey_data %>%
   mutate(question = as.factor(question))
 
 ## by discipline analysis ##
+model <- lmer(resp ~ yr_exp + position + (1|timestamp))
+model_anova <- anova(discipline_model)
 discipline_model <- lmer(response ~ discipline_collapsed + question + discipline_collapsed:question + (1|ResponseId), credibility_data_long %>% filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering'))
 discipline_anova_output <- anova(discipline_model)
 
