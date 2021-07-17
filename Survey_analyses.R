@@ -9,7 +9,7 @@ library(lavaan)
 library(semTools)
 library(broom)
 library(tidyLPA)
-library(semPlot)
+# library(semPlot)
 
 ## reading in data
 osf_retrieve_file("https://osf.io/86upq/") %>% 
