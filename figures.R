@@ -31,15 +31,15 @@ corr_s1 <- lapply(s1, as.numeric) %>% as.data.frame() %>%
   cor(use = 'pairwise.complete.obs', method = 'spearman')
 
 ## Section 2
-s2 <- dat[, 14:24]
-colnames(s2) <- substr(colnames(s2), 10, 100) ## Remove leading 'citation '
+s2 <- dat[, 14:22]
+colnames(s2) <- substr(colnames(s2), 6, 100) ## Remove leading 'read '
 #str(s2)
 likert_s2 <- s2 %>% as.data.frame() %>% likert()
 corr_s2 <- lapply(s2, as.numeric) %>% as.data.frame() %>%
   cor(use = 'pairwise.complete.obs', method = 'spearman')
 
 ## Section 3
-s3 <- dat[, 28:36]
+s3 <- dat[, 24:31]
 colnames(s3) <- substr(colnames(s3), 7, 100) ## Remove leading 'venue '
 #str(s3)
 likert_s3 <- s3 %>% as.data.frame() %>% likert()
@@ -64,7 +64,7 @@ dev.off()
 file.copy(name, to = paste0(path, name), overwrite = TRUE)
 file.remove(name)
 
-### Other corrplot thoughts & options
+### Other corrplot options
 # corrplot(corr_s1, method = 'number')
 # corrplot(corr_s1, method = 'ellipse', order = 'AOE', type = 'upper')
 # 
