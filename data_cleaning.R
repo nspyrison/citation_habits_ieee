@@ -4,7 +4,9 @@ require("skimr")
 
 ### Import data ------
 ## pilot data -- NOT IEEE
-raw <- readr::read_csv("./data/raw_survey_pilot.csv") 
+raw <- readr::read_csv("./data/raw_survey_pilot_v2.csv") 
+dim(raw)
+colnames(raw)
 
 ## Initialize factor levels
 position_lvls <- c("Graduate Student (Masters, PhD)",
@@ -15,25 +17,14 @@ position_lvls <- c("Graduate Student (Masters, PhD)",
                    "Research Scientist/Staff Scientist, or equivalent",
                    "Private Sector/Practitioner, or equivalent",
                    "Other")
-s1_lvls <- c("Never", "Rarely", "Sometimes", "Frequently", "Always")
-s23_lvls <- c("Not at all important", "Slightly important", "Moderately important", "Very important", "Extremely important")
-y1_lvls <- c("No additional scrutiny", "Some additional scrutiny", "Moderate additional scrutiny", "A lot of additional scrutiny", "Highest additional scrutiny")
-y2_lvls <- c("Not correlated", "Weak positive correlation", "Medium positive correlation", "Fairly high positive correlation", "Strong positive correlation")
+# s1_lvls <- c("Never", "Rarely", "Sometimes", "Frequently", "Always")
+# s23_lvls <- c("Not at all important", "Slightly important", "Moderately important", "Very important", "Extremely important")
+corr_lvls <- c("Not correlated", "Weak positive correlation", "Medium positive correlation", "Fairly high positive correlation", "Strong positive correlation")
 
 ## Deal with stubborn cases:
-raw$`...and how often you use it` <- 
-  factor(raw$`...and how often you use it`,
-         levels = 1:5, ordered = TRUE, exclude = NA)
-levels(raw$`...and how often you use it`) <- s1_lvls
-raw$`...and how important it is` <- 
-  factor(raw$`...and how important it is`,
-         levels = 1:5, ordered = TRUE, exclude = NA)
-levels(raw$`...and how important it is`) <- s23_lvls
-raw$`...and how important it is_1` <- 
-  factor(raw$`...and how important it is_1`,
-         levels = 1:5, ordered = TRUE, exclude = NA)
-levels(raw$`...and how important it is_1`) <- s23_lvls
-
+raw$`How correlated do you think the quality of a venue is with the quality of its papers?` <-
+  factor(corr_lvls[raw$`How correlated do you think the quality of a venue is with the quality of its papers?`],
+         levels = corr_lvls, ordered = TRUE, exclude = NA)
 
 ## Clean data -----
 clean <-
@@ -43,7 +34,7 @@ clean <-
     timestamp = lubridate::as_datetime(Timestamp),
     consent = `Consent and understanding` == "I understand that my data will be used and published on a repository, and I certify that I meet the criteria for participation in this survey",
     position = factor(
-      `What is your title/position?`, 
+      `What is your title/position?`,
       levels = position_lvls),
     `years vis experience` = `How many years of experience in visualization research do you have?`,
     ## Section 1, frequency of use sourcing citations:
@@ -68,49 +59,35 @@ clean <-
     `source Google Scholar` = factor(
       `How often do you use the following sources when finding papers related to your research? [Google Scholar]`,
       levels = s1_lvls, ordered = TRUE, exclude = NA),
-    `source other rank` = `...and how often you use it`, ## Converted above
+    `source other rank` = `...and how often you use it [Other criteria]`,
     `source other text` = `If you use any other source, indicate here which one`,
-    ## Section 2, importance for including as citation:
-    `citation authors institution` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Institutional affiliation of the authors]`,
+    ## Section 2, importance for reading paper in detail:
+    `read available research materials` = factor(
+      `How important are the following criteria when deciding whether or not to read a paper in detail? [Availability of research materials]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation publication venue` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Publication venue]`,
+    `read author familiarity` = factor(
+      `How important are the following criteria when deciding whether or not to read a paper in detail? [Personal familiarity with authors]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation data available` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Availability of data]`,
+    `read recency of publication` = factor(
+      `How important are the following criteria when deciding whether or not to read a paper in detail? [Recency of the publication]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation author's previous work` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Information about the authors' previous work]`,
+    `read authors institution` = factor(
+      `How important are the following criteria when deciding whether or not to read a paper in detail? [Institutional affiliation of the authors]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation work robustness/replicability` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Robustness/replicability of the work]`,
+    `read publication venue` = factor(
+      `How important are the following criteria when deciding whether or not to read a paper in detail? [Publication venue]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation peer/mentor comments` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Comments from peers/mentors]`,
+    `read data available` = factor(
+      `How important are the following criteria when deciding whether or not to read a paper in detail? [Availability of data]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation pre-registration` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Availability of pre-registration/study registration]`,
+    `read pre-registration` = factor(
+      `How important are the following criteria when deciding whether or not to read a paper in detail? [Availability of pre-registration/study registration]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation usage metrics` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Usage metrics (downloads, citations, altmetric)]`,
+    `read usage metrics` = factor(
+      `How important are the following criteria when deciding whether or not to read a paper in detail? [Usage metrics (downloads, citations, altmetric)]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation relevance` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Relevance to your work]`,
-      levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citaion research materials available` = factor(
-      `How important are the following criteria when deciding to cite a research paper? [Availability of research materials]`,
-      levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `citation other rank` = `...and how important it is`, ## Converted above
-    `citation other text` = `If you use any other criteria, indicate here which one`,
-    ## Y1
-    `sub-optimal additional scrutiny` = factor(
-      `If a research paper is relevant to your topic, but has been published in what you consider to be a sub-optimal venue, how much extra scrutiny would you give it?`,
-      levels = y1_lvls, ordered = TRUE, exclude = NA),
-    ## Y2
-    `venue/paper quality correlation` = factor(
-      `How correlated do you think the quality of a venue is with the quality of its papers?`,
-      levels = y2_lvls, ordered = TRUE, exclude = NA),
+    `read other rank` = `...and how important it is [Other criteria]`,
+    `read other text` = `If you use any other criteria, indicate here which one`,
     ## Section 3, importance for assessing venue quality:
     `venue attendance/citations/downloads` = factor(
       `How important are the following criteria when assessing the quality of a venue? [Conference attendance/citations/downloads]`,
@@ -133,11 +110,15 @@ clean <-
     `venue research scope` = factor(
       `How important are the following criteria when assessing the quality of a venue? [Research scope of the venue (i.e., focused vs broad)]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `venue other rank` = `...and how important it is_1`, ## Converted above
+    `venue other rank` = `...and how important it is [Other criteria]_1`, ## Converted above
     `venue other text` = `If you use any other criteria, indicate here which one_1`,
+    ## correlation of venue & paper correlation 
+    `correlation of venue & paper quality` = factor(
+      `How correlated do you think the quality of a venue is with the quality of its papers?`,
+      levels = corr_lvls, ordered = TRUE, exclude = NA),
+    ## Other freeform
     `other comments text` = `Are there any other thoughts or comments you wish to share with us?`
   )
-
 skimr::skim(clean)
 
 
