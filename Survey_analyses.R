@@ -1,3 +1,11 @@
+## Dependant packages -------
+require("tidyverse")
+require("skimr")
+require("likert")
+require("corrplot")
+library("psych")
+library("lmerTest")
+
 ##required libraries
 library(osfr)
 library(tidyverse)
@@ -12,277 +20,227 @@ library(tidyLPA)
 # library(semPlot)
 
 ## reading in data
-osf_retrieve_file("https://osf.io/86upq/") %>% 
-  osf_download()
 
-all_survey_data <- read_csv(here::here('cleaned_data.csv'), col_types = cols(.default = col_number(),
-                                                                             StartDate = col_datetime(format = '%m/%d/%y %H:%M'),
-                                                                             EndDate = col_datetime(format = '%m/%d/%y %H:%M'),
-                                                                             ResponseId = col_character(),
-                                                                             position_7_TEXT = col_character(), 
-                                                                             familiar = col_factor(),
-                                                                             preprints_submitted = col_factor(),
-                                                                             preprints_used = col_factor(),
-                                                                             position = col_factor(),
-                                                                             acad_career_stage = col_factor(),
-                                                                             country = col_factor(),
-                                                                             continent = col_factor(),
-                                                                             discipline = col_character(),
-                                                                             discipline_specific = col_character(),
-                                                                             discipline_other = col_character(),
-                                                                             bepress_tier1 = col_character(),
-                                                                             bepress_tier2 = col_character(),
-                                                                             bepress_tier3 = col_character(),
-                                                                             discipline_collapsed = col_factor(),
-                                                                             how_heard = col_character(),
-                                                                             hdi_level = col_factor(),
-                                                                             age = col_character())) %>%
-  mutate(hdi_level = fct_relevel(hdi_level, c('low', 'medium', 'high', 'very high')),
-         preprints_used = recode_factor(preprints_used, `Not sure` = NA_character_),
-         preprints_used = fct_relevel(preprints_used, c('No', 'Yes, once', 'Yes, a few times', 'Yes, many times')),
-         preprints_submitted = recode_factor(preprints_submitted, `Not sure` = NA_character_),
-         preprints_submitted = fct_relevel(preprints_submitted, c('No', 'Yes, once', 'Yes, a few times', 'Yes, many times')),
-         familiar = fct_relevel(familiar, c('Not familiar at all', 'Slightly familiar', 'Moderately familiar', 'Very familiar', 'Extremely familiar')),
-         acad_career_stage = fct_relevel(acad_career_stage, c('Grad Student', 'Post doc', 'Assist Prof', 'Assoc Prof', 'Full Prof'))) %>%
-  mutate(hdi_level = fct_explicit_na(hdi_level, '(Missing)'),
-         familiar = fct_explicit_na(familiar, '(Missing)'),
-         discipline_collapsed = fct_explicit_na(discipline_collapsed, '(Missing)')) %>%
-  mutate(missing_qs = rowSums(is.na(.)))
+## read the data ------
+dat <- readr::read_rds("./data/clean_survey_pilot.rds")
 
-#### basic sample characteristics ####
+## skim
+dim(dat)
+dat %>% skimr::skim()
+str(dat)
 
-# total sample who consented
-nrow(all_survey_data)
-
-#percentage of respondents who only consented
-round(100*sum(all_survey_data$missing_qs == 54)/nrow(all_survey_data), 2)
-
-#for those who answered 1 question, attrition rate
-round(100 * sum(all_survey_data$missing_qs < 54 & all_survey_data$Progress != 100)/sum(all_survey_data$missing_qs < 54), 2)
-
-#number who answered at least 1 question after consent
-sum(all_survey_data$missing_qs < 54)
+## Sections 1:3, and paper/venue quality correlation.
+dat_likert <- dat[, c(5:12, 14:22, 24:31, 33)] 
 
 
-##create dataset of only those who answered at least 1 question for analysis
-survey_data <- all_survey_data %>%
-  filter(missing_qs < 54)
+### OSF analyses section:
+# The analysis process will follow a similar method as used in a related article by Soderberg et al. on the credibility of preprint [1] (which we will acknowledge in our manuscript). This will be based on the R scripts found in their OSF repository [2]. 
+# Overall our process will be the following:
+#   - We will produce Likert plots combined with violin plots containing 95% Confidence Intervals (CIs) of the responses. We will analyse our results with an estimation approach and inference by eye [3,4] 
+# - We will look at correlation of responses with experience as a researcher. For that we will first conduct a Spearman ranked correlation of the Likert scales responses in general and across experience levels. Whether we use years of experience in the field or position as a proxy for "experience" will depend on the demographics of our participants. 
+# - We will create a mixed model regressing responses to the Likert scales. The main effects will be years of experience, position, and a random effect for participants will be included.  
+# 
+# [1] https://doi.org/10.1098/rsos.201520
+# [2] https://osf.io/j7u6z/
+# [3] http://link.springer.com/chapter/10.1007%2F978-3-319-26633-6_13 
+# [4] https://arxiv.org/pdf/2002.07671.pdf 
 
-# familiarity level of sample
-survey_data %>% 
-  group_by(familiar) %>% 
-  tally()
-
-
-100*sum(survey_data$familiar == 'Extremely familiar' | survey_data$familiar == 'Very familiar', na.rm = T)/nrow(survey_data) #percentage familiar
-100*sum(survey_data$familiar == 'Not familiar at all', na.rm = T)/nrow(survey_data) #percentage unfamiliar
-
-# favorability level of sample
-survey_data %>% 
-  group_by(favor_use) %>% 
-  tally()
-
-100*sum(survey_data$favor_use < 0, na.rm = T)/nrow(survey_data) #percentage unfavorable
-100*sum(survey_data$favor_use == 0, na.rm = T)/nrow(survey_data) #percentage neutral
-100*sum(survey_data$favor_use > 0, na.rm = T)/nrow(survey_data) #percentage favorable
-
-# preprint usage/submission
-
-# used or submitted
-100* sum(survey_data$preprints_used == 'Yes, many times' | 
-           survey_data$preprints_used == 'Yes, a few times' | 
-           survey_data$preprints_submitted == 'Yes, many times' | 
-           survey_data$preprints_submitted == 'Yes, a few times', na.rm = T)/nrow(survey_data)
-
-# breakdown of submission rates
-survey_data %>% 
-  group_by(preprints_submitted) %>% 
-  tally()
-
-# percentage many/few submissions
-100* sum(survey_data$preprints_submitted == 'Yes, many times' | survey_data$preprints_submitted == 'Yes, a few times', na.rm = T)/nrow(survey_data)
-
-# breakdown of use rates
-survey_data %>% 
-  group_by(preprints_used) %>% 
-  tally()
-
-# percentage many/few usage
-100* sum(survey_data$preprints_used == 'Yes, many times' | survey_data$preprints_used == 'Yes, a few times', na.rm = T)/nrow(survey_data)
-
-
-# demographics #
-survey_data %>% 
-  group_by(acad_career_stage) %>% 
-  tally()
-
-# career level percentages
-100*sum(survey_data$acad_career_stage == 'Grad Student' | survey_data$acad_career_stage == 'Post doc' , na.rm = T)/nrow(survey_data) #percentage grad/post docs
-100*sum(grepl('Prof', survey_data$acad_career_stage))/nrow(survey_data) #percentage profs
-100*sum(is.na(survey_data$acad_career_stage))/nrow(survey_data) #percentage didnt' answer/didn't fall into another category
-
-# discipline percentages
-survey_data %>% 
-  group_by(bepress_tier1) %>%
-  summarize(n = n(), percentage = 100*n/nrow(survey_data))
-
-100*sum(survey_data$discipline_collapsed == 'Psychology', na.rm = T)/sum(survey_data$bepress_tier1 == 'Social and Behavioral Sciences', na.rm = T)
-
-# country related variables
-survey_data %>% 
-  group_by(hdi_level) %>% 
-  summarize(n = n(), percentage = 100*n/nrow(survey_data))
-
-survey_data %>% 
-  group_by(continent) %>% 
-  summarize(n = n(), percentage = 100*n/nrow(survey_data)) %>%
-  arrange(desc(n))
-
-100*sum(survey_data$country == 'United States of America', na.rm = T)/nrow(survey_data)
-
-# correlation favor-use/use/submissions and credibility questions
-correlations1 <- survey_data %>%
-  select(preprints_used, preprints_submitted, starts_with('preprint_cred')) %>%
-  mutate(preprints_used = as.numeric(preprints_used),
-         preprints_submitted = as.numeric(preprints_submitted)) %>%
-  cor(use = 'pairwise.complete.obs', method = 'spearman')
-
-correlations2 <- survey_data %>%
-  select(favor_use, starts_with('preprint_cred')) %>%
-  cor(use = 'pairwise.complete.obs')
-
-correlations <- as.data.frame(cbind(correlations1[3:21, 1:2], correlations2[2:20, 1])) 
-
-# median correlation magnitude
-median(correlations %>%
-         pivot_longer(names_to = 'corr_variable', cols = preprints_used:V3) %>%
-         select(value) %>%
-         mutate(value = abs(value)) %>%
-         pull(value))
-
-### cues by career/disicpline analyses ###
-
-## by discipline analysis ##
-discipline_q_means <- survey_data %>%
-  select(-c(consent, HDI_2017)) %>%
-  group_by(discipline_collapsed) %>%
-  skim() %>%
-  yank('numeric') %>%
-  rename(question = skim_variable) %>%
-  filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering' & discipline_collapsed != '(Missing)') %>%
-  select(discipline_collapsed, question, mean) %>%
-  filter(grepl('preprint', question)) %>%
-  filter(!is.na(mean)) %>%
-  mutate(mean = as.numeric(mean))
-
-# largest diff between discipline wtihin question
-discipline_q_means %>%
-  group_by(question) %>%
-  summarize(min = min(mean), max = max(mean)) %>%
-  mutate(diff = max-min) %>%
-  arrange(desc(diff)) %>%
-  slice(1L)
-
-# largest diff between question wtihin discipline
-discipline_q_means %>%
-  group_by(discipline_collapsed) %>%
-  summarize(min = min(mean), max = max(mean)) %>%
-  mutate(diff = max-min) %>%
-  arrange(desc(diff)) %>%
-  slice(1L)
-
-# reformat data for lme models
-credibility_data_long <- survey_data %>%
-  dplyr::select(ResponseId, starts_with('preprint_cred'), discipline_collapsed, acad_career_stage) %>%
-  drop_na() %>%
-  pivot_longer(cols = starts_with('preprint_cred'), names_to = 'question', values_to = 'response') %>%
-  mutate(question = as.factor(question))
-
-## by discipline analysis ##
-model <- lmer(resp ~ yr_exp + position + (1|timestamp))
-model_anova <- anova(discipline_model)
-discipline_model <- lmer(response ~ discipline_collapsed + question + discipline_collapsed:question + (1|ResponseId), credibility_data_long %>% filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering'))
-discipline_anova_output <- anova(discipline_model)
-
-# R2 calculated using Edwards et al (2008) method
-discipline_r2 <- ((discipline_anova_output[1,3])/discipline_anova_output[1,4] * discipline_anova_output[1,5])/(1 + ((discipline_anova_output[1,3])/discipline_anova_output[1,4] * discipline_anova_output[1,5]))
-question_r2 <- ((discipline_anova_output[2,3])/discipline_anova_output[2,4] * discipline_anova_output[2,5])/(1 + ((discipline_anova_output[2,3])/discipline_anova_output[2,4] * discipline_anova_output[2,5]))
-
-
-## by career_stage ##
-career_q_means <- survey_data %>%
-  select(-c(consent, HDI_2017)) %>%
-  group_by(acad_career_stage) %>%
-  skim() %>%
-  yank('numeric') %>%
-  rename(question = skim_variable) %>%
-  select(acad_career_stage, question, mean) %>%
-  filter(grepl('preprint', question)) %>%
-  filter(!is.na(mean)) %>%
-  mutate(mean = as.numeric(mean))
-
-# largest diff between career stage wtihin question
-career_q_means %>%
-  group_by(question) %>%
-  summarize(min = min(mean), max = max(mean)) %>%
-  mutate(diff = max-min) %>%
-  arrange(desc(diff)) %>%
-  slice(1L)
-
-# largest diff between question wtihin career stage
-career_q_means %>%
-  group_by(acad_career_stage) %>%
-  summarize(min = min(mean), max = max(mean)) %>%
-  mutate(diff = max-min) %>%
-  arrange(desc(diff)) %>%
-  slice(1L)
-
-## by academic position analysis ##
-position_model <- lmer(response ~ acad_career_stage + question + acad_career_stage:question + (1|ResponseId), credibility_data_long)
-position_anova_output <- anova(position_model)
-
-# R2 calculated using Edwards et al (2008) method
-position_r2 <- ((position_anova_output[1,3])/position_anova_output[1,4] * position_anova_output[1,5])/(1 + ((position_anova_output[1,3])/position_anova_output[1,4] * position_anova_output[1,5]))
-question_r2 <- ((position_anova_output[2,3])/position_anova_output[2,4] * position_anova_output[2,5])/(1 + ((position_anova_output[2,3])/position_anova_output[2,4] * position_anova_output[2,5]))
+## 1) Likerts produced in `figures.r`
+## 2) Spearman correlation produced in `figures.r`,
+#### - will want need to come up with some form of crossing seniority/experience.
+## 3) Mixed models (lmer), produce below
+## (4) demographic heatmap; produce below
+## (5) factor analysis/PCA, produce below
 
 
 
-#### exploratory factor analysis ####
+## 3) Mixed models (lmer) -----
 
-credibilty_qs <- survey_data %>%
-  dplyr::select(ResponseId,starts_with('preprint_cred')) %>%
-  column_to_rownames('ResponseId')
 
-fa.parallel(credibilty_qs)
+## (4) demographic heatmap ------
 
-fa6 <- fa(credibilty_qs, nfactors = 6, rotate = 'oblimin') 
-fa6
-fa.diagram(fa6)
 
-fa4 <- fa(credibilty_qs, nfactors = 4, rotate = 'oblimin') 
-fa4
-fa.diagram(fa4)
+## (5) Factor analysis/PCA -----
 
-fa3 <- fa(credibilty_qs, nfactors = 3, rotate = 'oblimin') 
+str(dat_likert)
+(pca_obj <- prcomp(dat_likert))
+
+psych::fa.parallel(dat_likert)
+
+fa3 <- fa(dat_likert, nfactors = 3, rotate = 'oblimin') 
 fa3
 fa.diagram(fa3)
 
-## measurement invariance calculations ##
-base_model <- 'traditional =~ preprint_cred1_1 + preprint_cred1_2 + preprint_cred1_3	
+### Intrinsic dimension estimations with Rdimtools.
+
+#' @example 
+#' dat <- as.matrix(tourr::flea[, 1:6])
+#' ide_vect(data = dat, inc_slow = FALSE)
+#' ide_vect(data = dat, inc_slow = TRUE)
+ide_vect <- function(data, inc_slow = FALSE){
+  ls_funcs <- list(Rdimtools::est.boxcount, Rdimtools::est.correlation,
+                   Rdimtools::est.made, Rdimtools::est.mle2,
+                   Rdimtools::est.twonn)
+  nms <- c("est.boxcount", "est.correlation", "est.made", "est.mle2", "est.twonn")
+  if(inc_slow == TRUE){
+    ls_funcs <- c(
+      ls_funcs, list(Rdimtools::est.clustering, Rdimtools::est.danco,
+                     Rdimtools::est.gdistnn, Rdimtools::est.incisingball,
+                     Rdimtools::est.mindkl, Rdimtools::est.Ustat
+      ))
+    nms <- c(nms, "est.clustering", "est.danco", "est.gdistnn", "est.incisingball", "est.mindkl", "est.Ustat")
+  } ## est.incisingball prints histogram...
+  ret <- sapply(1:length(ls_funcs), function(i){
+    tryCatch(ls_funcs[[i]](data)$estdim,
+             error=function(cond){
+               message("Error in est.* function:")
+               message(cond)
+               return(NA)
+             })
+  })
+  names(ret) <- c(nms)
+  return(ret)
+}
+
+
+
+
+#### PREPRINT CODE BELOW -----
+## Will probably have to see their script to replicate it
+if(F){ ## NOT RUN ##
+  file.edit("./survey_analyses_preprints_script.r")
+  
+  
+  
+  # correlation favor-use/use/submissions and credibility questions
+  correlations1 <- survey_data %>%
+    select(preprints_used, preprints_submitted, starts_with('preprint_cred')) %>%
+    mutate(preprints_used = as.numeric(preprints_used),
+           preprints_submitted = as.numeric(preprints_submitted)) %>%
+    cor(use = 'pairwise.complete.obs', method = 'spearman')
+  
+  correlations2 <- survey_data %>%
+    select(favor_use, starts_with('preprint_cred')) %>%
+    cor(use = 'pairwise.complete.obs')
+  
+  correlations <- as.data.frame(cbind(correlations1[3:21, 1:2], correlations2[2:20, 1])) 
+  
+  # median correlation magnitude
+  median(correlations %>%
+           pivot_longer(names_to = 'corr_variable', cols = preprints_used:V3) %>%
+           select(value) %>%
+           mutate(value = abs(value)) %>%
+           pull(value))
+  
+  ### cues by career/disicpline analyses ###
+  
+  ## by discipline analysis ##
+  discipline_q_means <- survey_data %>%
+    select(-c(consent, HDI_2017)) %>%
+    group_by(discipline_collapsed) %>%
+    skim() %>%
+    yank('numeric') %>%
+    rename(question = skim_variable) %>%
+    filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering' & discipline_collapsed != '(Missing)') %>%
+    select(discipline_collapsed, question, mean) %>%
+    filter(grepl('preprint', question)) %>%
+    filter(!is.na(mean)) %>%
+    mutate(mean = as.numeric(mean))
+  
+  # largest diff between discipline wtihin question
+  discipline_q_means %>%
+    group_by(question) %>%
+    summarize(min = min(mean), max = max(mean)) %>%
+    mutate(diff = max-min) %>%
+    arrange(desc(diff)) %>%
+    slice(1L)
+  
+  # largest diff between question wtihin discipline
+  discipline_q_means %>%
+    group_by(discipline_collapsed) %>%
+    summarize(min = min(mean), max = max(mean)) %>%
+    mutate(diff = max-min) %>%
+    arrange(desc(diff)) %>%
+    slice(1L)
+  
+  # reformat data for lme models
+  credibility_data_long <- survey_data %>%
+    dplyr::select(ResponseId, starts_with('preprint_cred'), discipline_collapsed, acad_career_stage) %>%
+    drop_na() %>%
+    pivot_longer(cols = starts_with('preprint_cred'), names_to = 'question', values_to = 'response') %>%
+    mutate(question = as.factor(question))
+  
+  ## by discipline analysis ##
+  model <- lmer(resp ~ yr_exp + position + (1|timestamp))
+  model_anova <- anova(discipline_model)
+  discipline_model <- lmer(response ~ discipline_collapsed + question + discipline_collapsed:question + (1|ResponseId), credibility_data_long %>% filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering'))
+  discipline_anova_output <- anova(discipline_model)
+  
+  # R2 calculated using Edwards et al (2008) method
+  discipline_r2 <- ((discipline_anova_output[1,3])/discipline_anova_output[1,4] * discipline_anova_output[1,5])/(1 + ((discipline_anova_output[1,3])/discipline_anova_output[1,4] * discipline_anova_output[1,5]))
+  question_r2 <- ((discipline_anova_output[2,3])/discipline_anova_output[2,4] * discipline_anova_output[2,5])/(1 + ((discipline_anova_output[2,3])/discipline_anova_output[2,4] * discipline_anova_output[2,5]))
+  
+  
+  ## by career_stage ##
+  career_q_means <- survey_data %>%
+    select(-c(consent, HDI_2017)) %>%
+    group_by(acad_career_stage) %>%
+    skim() %>%
+    yank('numeric') %>%
+    rename(question = skim_variable) %>%
+    select(acad_career_stage, question, mean) %>%
+    filter(grepl('preprint', question)) %>%
+    filter(!is.na(mean)) %>%
+    mutate(mean = as.numeric(mean))
+  
+  # largest diff between career stage wtihin question
+  career_q_means %>%
+    group_by(question) %>%
+    summarize(min = min(mean), max = max(mean)) %>%
+    mutate(diff = max-min) %>%
+    arrange(desc(diff)) %>%
+    slice(1L)
+  
+  # largest diff between question wtihin career stage
+  career_q_means %>%
+    group_by(acad_career_stage) %>%
+    summarize(min = min(mean), max = max(mean)) %>%
+    mutate(diff = max-min) %>%
+    arrange(desc(diff)) %>%
+    slice(1L)
+  
+  ## by academic position analysis ##
+  position_model <- lmer(response ~ acad_career_stage + question + acad_career_stage:question + (1|ResponseId), credibility_data_long)
+  position_anova_output <- anova(position_model)
+  
+  # R2 calculated using Edwards et al (2008) method
+  position_r2 <- ((position_anova_output[1,3])/position_anova_output[1,4] * position_anova_output[1,5])/(1 + ((position_anova_output[1,3])/position_anova_output[1,4] * position_anova_output[1,5]))
+  question_r2 <- ((position_anova_output[2,3])/position_anova_output[2,4] * position_anova_output[2,5])/(1 + ((position_anova_output[2,3])/position_anova_output[2,4] * position_anova_output[2,5]))
+  
+  
+  
+  #### exploratory factor analysis ####
+  
+  ## MOVED UP ##
+  
+  ## measurement invariance calculations ##
+  base_model <- 'traditional =~ preprint_cred1_1 + preprint_cred1_2 + preprint_cred1_3	
                open_icons =~ preprint_cred4_1 + preprint_cred4_2 + preprint_cred4_3 + preprint_cred4_4	
                verifications =~ preprint_cred5_1 + preprint_cred5_2 + preprint_cred5_3	
                opinions =~ preprint_cred3_1 + preprint_cred3_2 + preprint_cred3_3	
                external_support    =~ preprint_cred1_4 + preprint_cred2_1	
                usage   =~ preprint_cred2_3 + preprint_cred2_4'
-
-# by career stages testing
-position_models <- cfa(model = base_model, data = survey_data, group = 'acad_career_stage')
-summary(position_models, fit.measures = T)
-
-measurementInvariance(model = base_model, data = survey_data, group = 'acad_career_stage')
-
-# by discipline testing
-discipline_models <- cfa(model = base_model, data = survey_data %>% filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering'), group = 'discipline_collapsed')
-summary(discipline_models , fit.measures = T)
-
-measurementInvariance(model = base_model, data = survey_data %>% filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering'), group = 'discipline_collapsed')
+  
+  # by career stages testing
+  position_models <- cfa(model = base_model, data = survey_data, group = 'acad_career_stage')
+  summary(position_models, fit.measures = T)
+  
+  measurementInvariance(model = base_model, data = survey_data, group = 'acad_career_stage')
+  
+  # by discipline testing
+  discipline_models <- cfa(model = base_model, data = survey_data %>% filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering'), group = 'discipline_collapsed')
+  summary(discipline_models , fit.measures = T)
+  
+  measurementInvariance(model = base_model, data = survey_data %>% filter(discipline_collapsed != 'Other' & discipline_collapsed != 'Engineering'), group = 'discipline_collapsed')
+  
+}

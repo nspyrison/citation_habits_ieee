@@ -21,39 +21,41 @@ dim(dat)
 dat %>% skimr::skim()
 str(dat)
 
-#### partition into sections, create likert & cor matrix -----
-## Section 1
-s1 <- dat[, 5:12]
+### Sections partitions of likert items -----
+## Section 1, Sourcing papers
+s1 <- dat[, 5:12] 
 colnames(s1) <- substr(colnames(s1), 8, 100) ## Remove leading 'source '
-#str(s1)
-likert_s1 <- s1 %>% as.data.frame() %>% likert()
-corr_s1 <- lapply(s1, as.numeric) %>% as.data.frame() %>%
-  cor(use = 'pairwise.complete.obs', method = 'spearman')
-
-## Section 2
+## Section 2, reading papers in detail
 s2 <- dat[, 14:22]
 colnames(s2) <- substr(colnames(s2), 6, 100) ## Remove leading 'read '
-#str(s2)
-likert_s2 <- s2 %>% as.data.frame() %>% likert()
-corr_s2 <- lapply(s2, as.numeric) %>% as.data.frame() %>%
-  cor(use = 'pairwise.complete.obs', method = 'spearman')
-
-## Section 3
+## Section 3, assessing venue quality
 s3 <- dat[, 24:31]
 colnames(s3) <- substr(colnames(s3), 7, 100) ## Remove leading 'venue '
-#str(s3)
+
+
+
+### Likert objects -----
+## to plot, call plot(likert_obt)
+likert_s1 <- s1 %>% as.data.frame() %>% likert()
+likert_s2 <- s2 %>% as.data.frame() %>% likert()
 likert_s3 <- s3 %>% as.data.frame() %>% likert()
-corr_s3 <- lapply(s3, as.numeric) %>% as.data.frame() %>%
-  cor(use = 'pairwise.complete.obs', method = 'spearman')
 
-
-## Likert plot mock ups -----
+## saving
 likert_out1 <- plot(likert_s1) + ggtitle("Section 1, frequency of use when sourcing papers in liturature review")
 ggsave("likert_section1.pdf", likert_out1, "pdf", "figures",
        width = 8, height = 3, units = "in")
 
 
-## Correlation plots mock ups -----
+### Correlation ---
+
+corr_s1 <- lapply(s1, as.numeric) %>% as.data.frame() %>%
+  cor(use = 'pairwise.complete.obs', method = 'spearman')
+corr_s2 <- lapply(s2, as.numeric) %>% as.data.frame() %>%
+  cor(use = 'pairwise.complete.obs', method = 'spearman')
+corr_s3 <- lapply(s3, as.numeric) %>% as.data.frame() %>%
+  cor(use = 'pairwise.complete.obs', method = 'spearman')
+
+## Saving Correlation plots mock ups
 path <- "./figures/"
 corr_s1 <- cor(mtcars) ## correlation for pilot is too sparse
 name <- "corr_s1.pdf"
