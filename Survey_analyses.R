@@ -11,16 +11,16 @@ require("merTools")
 require("performance") ## tidy model eval
 
 ##required libraries
-library(osfr)
-library(tidyverse)
-library(here)
-library(psych)
-library(MOTE)
-library(lmerTest)
-library(lavaan)
-library(semTools)
-library(broom)
-library(tidyLPA)
+# library(osfr)
+# library(tidyverse)
+# library(here)
+# library(psych)
+# library(MOTE)
+# library(lmerTest)
+# library(lavaan)
+# library(semTools)
+# library(broom)
+# library(tidyLPA)
 # library(semPlot)
 
 ## reading in data
@@ -55,7 +55,7 @@ dat_likert <- dat[, c(5:12, 14:22, 24:31, 33)]
 ## 3) Mixed models (lmer), produce below
 ## (4) demographic heatmap; produce below
 ## (5) factor analysis/PCA, produce below
-str(dat_likert)
+
 
 
 ## 3) Mixed model tables/coef (lmer) -----
@@ -63,9 +63,41 @@ str(dat)
 dat_mm <- cbind(participant_rownum = 1:nrow(dat), dat[, c(3:12, 14:22, 24:31, 33)])
 dat_mm$nchar_ff <- nchar(dat$`other comments text`)
 dat_mm$nchar_ff[is.na(dat_mm$nchar_ff)] <- 0L
+
+## integers, for pivoting :(
+dat_mm <- dat_mm %>% mutate(
+  `source ACM/IEEE DL`       = as.integer(`source ACM/IEEE DL`),
+  `source relevant articles` = as.integer(`source relevant articles`),
+  `source ResearchGate`      = as.integer(`source ResearchGate`),
+  `source PubMed`            = as.integer(`source PubMed`),
+  `source peer/mentor`       = as.integer(`source peer/mentor`),
+  `source journal/confrence` = as.integer(`source journal/confrence`),
+  `source Google Scholar`    = as.integer(`source Google Scholar`),
+  `source other rank`        = as.integer(`source other rank`),
+  `read available research materials` = as.integer(`read available research materials`),
+  `read author familiarity`           = as.integer(`read author familiarity`),
+  `read recency of publication`       = as.integer(`read recency of publication`),
+  `read authors institution`          = as.integer(`read authors institution`),
+  `read publication venue`            = as.integer(`read publication venue`),
+  `read data available`               = as.integer(`read data available`),
+  `read pre-registration`             = as.integer(`read pre-registration`),
+  `read usage metrics`                = as.integer(`read usage metrics`),
+  `read other rank`                   = as.integer(`read other rank`),
+  `venue attendance/citations/downloads`    = as.integer(`venue attendance/citations/downloads`),
+  `venue audience scope`                    = as.integer(`venue audience scope`),
+  `venue acceptance rate/total submissions` = as.integer(`venue acceptance rate/total submissions`),
+  `venue ranking system`                    = as.integer(`venue ranking system`),
+  `venue metrics`                           = as.integer(`venue metrics`),
+  `venue peer/mentor opinion`               = as.integer(`venue peer/mentor opinion`),
+  `venue research scope`                    = as.integer(`venue research scope`),
+  `venue other rank`                        = as.integer(`venue other rank`),
+  `correlation of venue & paper quality`    = as.integer(`correlation of venue & paper quality`)
+)
+
+str(dat_mm)
 dat_longer <- dat_mm %>%
   tidyr::pivot_longer(
-    cols = `source ACM/IEEE DL`:`venue other rank`,
+    cols = `source ACM/IEEE DL`:`venue other rank`, ## Doesn't want to mix factors.
     names_to = "likert_item",
     values_to = "response",
     values_drop_na = TRUE
@@ -79,9 +111,9 @@ dat_longer <- dat_mm %>%
   ))
 
 str(dat_longer)
-base <- lmer(response ~ position + `years vis experience` + (1 | participant_rownum))
-full <- lmer(response ~ position + `years vis experience` + likert_question + nchar_ff + (1 | participant_rownum))
-model_ls <- list(base=base, full=full)
+base <- lmer(response ~ position + `years vis experience` + (1 | participant_rownum), dat_longer)
+full <- lmer(response ~ position + `years vis experience` + likert_question + nchar_ff + (1 | participant_rownum), dat_longer)
+model_ls <- list(base = base, full = full)
 ###TODO validate that the error/residuals are fine to support application of bootstraping
 
 
@@ -104,9 +136,7 @@ mute <- lapply(seq_along(model_ls), function(i){
   fixef_vec[i] <<- length(fixef(this_model))
 })
 .perf_df <- dplyr::bind_rows(performance_ls)
-.model_comp_colnms <- c("Fixed effects",
-                        "AIC", "BIC", "R2 cond. (on RE)",
-                        "R2 marg. (w/o RE)", "RMSE")
+
 model_comp_tbl <- tibble(names(model_ls),
                          round(.perf_df[, 1]),
                          round(.perf_df[, 2]),
@@ -114,18 +144,20 @@ model_comp_tbl <- tibble(names(model_ls),
                          round(.perf_df[, 4], 3),
                          round(.perf_df[, 6], 3),
 )
-colnames(model_comp_tbl) <- .model_comp_colnms
+colnames(model_comp_tbl) <- c(
+  "Model", "AIC", "BIC", "R2 cond. (on RE)",
+  "R2 marg. (w/o RE)", "RMSE")
 model_comp_tbl
 knitr::kable(model_comp_tbl)
 
 
 ## R2 calculated using Edwards et al (2008) method
 base_anova <- anova(base)
-position_anova_output <- anova(position_model)
+#position_anova_output <- anova(position_model)
 position_r2 <- (base_anova[1,3] / base_anova[1,4] * base_anova[1,5]) /
   (1 + ((base_anova[1,3]) / base_anova[1,4] * base_anova[1,5]))
 question_r2 <- ((base_anova[2,3]) / base_anova[2,4] * base_anova[2,5]) /
-  (1 + (base_anova[2,3] / base_anova[2,4] * position_anova_output[2,5]))
+  (1 + (base_anova[2,3] / base_anova[2,4] * base_anova[2,5]))
 
 
 ### Model coefficients ------

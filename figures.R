@@ -44,9 +44,9 @@ likert_s2 <- s2 %>% as.data.frame() %>% likert()
 likert_s3 <- s3 %>% as.data.frame() %>% likert()
 
 ## saving
-likert_out1 <- plot(likert_s1) + ggtitle("Section 1, frequency of use when sourcing papers in liturature review")
-likert_out2 <- plot(likert_s2) + ggtitle("Section 2, ...")
-likert_out3 <- plot(likert_s3) + ggtitle("Section 3, ...")
+likert_out1 <- plot(likert_s1) + ggtitle("Section 1, frequency of use when sourcing papers during liturature review")
+likert_out2 <- plot(likert_s2) + ggtitle("Section 2, importance for deciding wether or not to read in detail")
+likert_out3 <- plot(likert_s3) + ggtitle("Section 3, importance for assessing the quality of a venue")
 
 ggsave("likert_section1.pdf", likert_out1, "pdf", "figures",
        width = 8, height = 3, units = "in")
