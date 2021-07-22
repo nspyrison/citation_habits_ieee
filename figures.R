@@ -4,6 +4,7 @@ require("skimr")
 require("likert")
 require("corrplot")
 require("patchwork")
+require("hrbrthemes")
 ##
 # require(psych)
 # require(MOTE)
@@ -22,7 +23,7 @@ dim(dat)
 dat %>% skimr::skim()
 str(dat)
 
-### Sections partitions of likert items -----
+## Sections partitions (of likert items) -----
 ## Section 1, Sourcing papers
 s1 <- dat[, 5:12] 
 colnames(s1) <- substr(colnames(s1), 8, 100) ## Remove leading 'source '
@@ -35,10 +36,9 @@ colnames(s3) <- substr(colnames(s3), 7, 100) ## Remove leading 'venue '
 
 
 
-### Likert objects -----
+## 1) Likert figures -----
 ## to plot, call plot(likert_obj)
 
-## Doesn't like ordered factors??
 likert_s1 <- s1 %>% as.data.frame() %>% likert()
 likert_s2 <- s2 %>% as.data.frame() %>% likert()
 likert_s3 <- s3 %>% as.data.frame() %>% likert()
@@ -56,7 +56,7 @@ ggsave("likert_all.pdf", likert_pw, "pdf", "figures",
        width = 8, height = 10, units = "in")
 
 
-### Correlation ---
+## 2) Correlation figures ------
 dat_b <- cbind(s1[, -ncol(s1)], s2[, -ncol(s2)], s3[, -ncol(s3)]) %>% lapply(as.numeric) %>% as_tibble()
 corr_b <- dat_b %>% cor(use = 'pairwise.complete.obs', method = 'spearman')
 
@@ -67,9 +67,9 @@ corr_s2 <- lapply(s2, as.numeric) %>% as.data.frame() %>%
 corr_s3 <- lapply(s3, as.numeric) %>% as.data.frame() %>%
   cor(use = 'pairwise.complete.obs', method = 'spearman')
 
-## Saving Correlation plots mock ups
-path <- "./figures/"
+## Saving Correlation plots
 corr_ex <- cor(mtcars) ## correlation for pilot is too sparse
+path <- "./figures/"
 name <- "corr_mtcars.pdf"
 pdf(name)
 corrplot.mixed(corr_ex, lower = 'number', upper = 'ellipse',
@@ -90,3 +90,49 @@ file.remove(name)
 # # Visualize confidence interval, hard to read
 # corrplot(corr_s1, lowCI = testRes$lowCI, uppCI = testRes$uppCI, order = 'hclust',
 #          tl.pos = 'd', rect.col = 'navy', plotC = 'rect', cl.pos = 'n')
+
+## 3) mixed model -----
+
+
+## (4) demographic heatmap ------
+
+## Change character to factor, include counts in the levels of sex?
+str(clean)
+sub <- clean %>% select("timestamp", "position", "years vis experience")
+(time_hist <- sub %>% ggplot(aes(timestamp)) + geom_density() +
+  theme_ipsum())
+(demographics <- ggplot(sub, aes(position, `years vis experience`)) +
+    ## categorical violine plots?
+    geom_violin(width=2.1, size=0.2) +
+    scale_fill_viridis(discrete=TRUE) +
+    scale_color_viridis(discrete=TRUE) +
+    theme_ipsum() +
+    theme(legend.position="none") +
+    coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+    xlab("") +
+    ylab("Assigned Probability (%)") +
+    ## heatmap with counts.
+    # stat_bin2d(aes(fill = after_stat(count))) +
+    # geom_text(aes(label = after_stat(count)), stat = "bin2d") +
+    # scale_fill_gradient(low = "lightpink", high = "firebrick", na.value = NA) +
+    # theme_bw() +
+    # theme(axis.text.x = element_text(angle = 90, hjust = 1),
+    #       # legend.position = "bottom",
+    #       # legend.direction = "horizontal",
+    #       legend.margin = margin(0, 0, 0, 0)) +
+    ggtitle("Participant demographics"))
+if(F)
+  ggsave(filename = "./figures/demographic_heatmap.pdf",
+         plot = demographics / time_hist, device = "pdf", width = 4, height = 2)
+
+
+## (5) Factor analysis/PCA -----
+
+
+### Split data on type of response ------
+text_attr <- clean %>% ## Freeform text fields
+  dplyr::select("timestamp",
+                "source other text",   ## ~col 12
+                "read other text",     ## ~col 24
+                "venue other text",    ## ~col 36
+                "other comments text") ## ~col 37

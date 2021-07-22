@@ -54,7 +54,8 @@ dat_likert <- dat[, c(5:12, 14:22, 24:31, 33)]
 
 
 
-## 3) Mixed models (lmer) -----
+## 3) Mixed model tables/coef (lmer) -----
+
 
 
 ## (4) demographic heatmap ------
@@ -86,9 +87,10 @@ ide_vect <- function(data, inc_slow = FALSE){
     ls_funcs <- c(
       ls_funcs, list(Rdimtools::est.clustering, Rdimtools::est.danco,
                      Rdimtools::est.gdistnn, Rdimtools::est.incisingball,
-                     Rdimtools::est.mindkl, Rdimtools::est.Ustat
-      ))
-    nms <- c(nms, "est.clustering", "est.danco", "est.gdistnn", "est.incisingball", "est.mindkl", "est.Ustat")
+                     Rdimtools::est.mindkl, Rdimtools::est.Ustat0)
+    )
+    nms <- c(nms, "est.clustering", "est.danco", "est.gdistnn",
+             "est.incisingball", "est.mindkl", "est.Ustat")
   } ## est.incisingball prints histogram...
   ret <- sapply(1:length(ls_funcs), function(i){
     tryCatch(ls_funcs[[i]](data)$estdim,
