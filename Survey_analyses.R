@@ -3,8 +3,12 @@ require("tidyverse")
 require("skimr")
 require("likert")
 require("corrplot")
-library("psych")
-library("lmerTest")
+require("psych")
+## mixed models.
+require("lme4") ## Random Effects (RE) model creation
+require("lmerTest") ## p val interpretation of lme4 tests
+require("merTools")
+require("performance") ## tidy model eval
 
 ##required libraries
 library(osfr)
@@ -51,17 +55,89 @@ dat_likert <- dat[, c(5:12, 14:22, 24:31, 33)]
 ## 3) Mixed models (lmer), produce below
 ## (4) demographic heatmap; produce below
 ## (5) factor analysis/PCA, produce below
-
+str(dat_likert)
 
 
 ## 3) Mixed model tables/coef (lmer) -----
+str(dat)
+dat_mm <- cbind(participant_rownum = 1:nrow(dat), dat[, c(3:12, 14:22, 24:31, 33)])
+dat_mm$nchar_ff <- nchar(dat$`other comments text`)
+dat_mm$nchar_ff[is.na(dat_mm$nchar_ff)] <- 0L
+dat_longer <- dat_mm %>%
+  tidyr::pivot_longer(
+    cols = `source ACM/IEEE DL`:`venue other rank`,
+    names_to = "likert_item",
+    values_to = "response",
+    values_drop_na = TRUE
+  ) %>% 
+  mutate(likert_question = factor(
+    case_when(
+      substr(likert_item, 1, 6) == "source" ~ "source",
+      substr(likert_item, 1, 4) == "read" ~ "read",
+      substr(likert_item, 1, 5) == "venue" ~ "venue",
+    ), levels = c("source", "read", "venue")
+  ))
+
+str(dat_longer)
+base <- lmer(response ~ position + `years vis experience` + (1 | participant_rownum))
+full <- lmer(response ~ position + `years vis experience` + likert_question + nchar_ff + (1 | participant_rownum))
+model_ls <- list(base=base, full=full)
+###TODO validate that the error/residuals are fine to support application of bootstraping
+
+
+#-----------------------------------------------------------------------------
+# Plot the binned residuals as recommended by Gelman and Hill (2007)
+#-----------------------------------------------------------------------------
+require("arm")
+par(bg="white", cex=1.2, las=1)
+binnedplot(predict(base), resid(base), cex.pts=1, col.int="black")
+binnedplot(predict(full), resid(full), cex.pts=1, col.int="black")
+
+
+### Model performance ------
+## lapply over models
+performance_ls <- list(); factors_vec <- fixef_vec <- vector();
+mute <- lapply(seq_along(model_ls), function(i){
+  this_model <- model_ls[[i]]
+  performance_ls[[i]] <<- performance::model_performance(this_model)
+  factors_vec[i] <<- ncol(attr(terms(this_model), "factors"))
+  fixef_vec[i] <<- length(fixef(this_model))
+})
+.perf_df <- dplyr::bind_rows(performance_ls)
+.model_comp_colnms <- c("Fixed effects",
+                        "AIC", "BIC", "R2 cond. (on RE)",
+                        "R2 marg. (w/o RE)", "RMSE")
+model_comp_tbl <- tibble(names(model_ls),
+                         round(.perf_df[, 1]),
+                         round(.perf_df[, 2]),
+                         round(.perf_df[, 3], 3),
+                         round(.perf_df[, 4], 3),
+                         round(.perf_df[, 6], 3),
+)
+colnames(model_comp_tbl) <- .model_comp_colnms
+model_comp_tbl
+knitr::kable(model_comp_tbl)
+
+
+## R2 calculated using Edwards et al (2008) method
+base_anova <- anova(base)
+position_anova_output <- anova(position_model)
+position_r2 <- (base_anova[1,3] / base_anova[1,4] * base_anova[1,5]) /
+  (1 + ((base_anova[1,3]) / base_anova[1,4] * base_anova[1,5]))
+question_r2 <- ((base_anova[2,3]) / base_anova[2,4] * base_anova[2,5]) /
+  (1 + (base_anova[2,3] / base_anova[2,4] * position_anova_output[2,5]))
+
+
+### Model coefficients ------
+summary(base)$coefficients
+summary(full)$coefficients
 
 
 
 ## (4) demographic heatmap ------
 
 
-## (5) Factor analysis/PCA -----
+## (5) Factor analysis/PCA ------
 
 str(dat_likert)
 (pca_obj <- prcomp(dat_likert))
@@ -111,8 +187,6 @@ ide_vect <- function(data, inc_slow = FALSE){
 ## Will probably have to see their script to replicate it
 if(F){ ## NOT RUN ##
   file.edit("./survey_analyses_preprints_script.r")
-  
-  
   
   # correlation favor-use/use/submissions and credibility questions
   correlations1 <- survey_data %>%

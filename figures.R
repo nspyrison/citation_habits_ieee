@@ -136,3 +136,5 @@ text_attr <- clean %>% ## Freeform text fields
                 "read other text",     ## ~col 24
                 "venue other text",    ## ~col 36
                 "other comments text") ## ~col 37
+
+
