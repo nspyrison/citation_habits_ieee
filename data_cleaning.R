@@ -17,8 +17,8 @@ position_lvls <- c("Graduate Student (Masters, PhD)",
                    "Research Scientist/Staff Scientist, or equivalent",
                    "Private Sector/Practitioner, or equivalent",
                    "Other")
-# s1_lvls <- c("Never", "Rarely", "Sometimes", "Frequently", "Always")
-# s23_lvls <- c("Not at all important", "Slightly important", "Moderately important", "Very important", "Extremely important")
+s1_lvls <- c("Never", "Rarely", "Sometimes", "Frequently", "Always")
+s23_lvls <- c("Not at all important", "Slightly important", "Moderately important", "Very important", "Extremely important")
 corr_lvls <- c("Not correlated", "Weak positive correlation", "Medium positive correlation", "Fairly high positive correlation", "Strong positive correlation")
 
 ## Deal with stubborn cases:
@@ -59,7 +59,9 @@ clean <-
     `source Google Scholar` = factor(
       `How often do you use the following sources when finding papers related to your research? [Google Scholar]`,
       levels = s1_lvls, ordered = TRUE, exclude = NA),
-    `source other rank` = `...and how often you use it [Other criteria]`,
+    `source other rank` = factor(
+      `...and how often you use it [Other criteria]`,
+      levels = s1_lvls, ordered = TRUE, exclude = NA),
     `source other text` = `If you use any other source, indicate here which one`,
     ## Section 2, importance for reading paper in detail:
     `read available research materials` = factor(
@@ -86,7 +88,9 @@ clean <-
     `read usage metrics` = factor(
       `How important are the following criteria when deciding whether or not to read a paper in detail? [Usage metrics (downloads, citations, altmetric)]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `read other rank` = `...and how important it is [Other criteria]`,
+    `read other rank` = factor(
+      `...and how important it is [Other criteria]`,
+      levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read other text` = `If you use any other criteria, indicate here which one`,
     ## Section 3, importance for assessing venue quality:
     `venue attendance/citations/downloads` = factor(
@@ -110,7 +114,9 @@ clean <-
     `venue research scope` = factor(
       `How important are the following criteria when assessing the quality of a venue? [Research scope of the venue (i.e., focused vs broad)]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
-    `venue other rank` = `...and how important it is [Other criteria]_1`, ## Converted above
+    `venue other rank` = factor(
+      `...and how important it is [Other criteria]_1`,
+      levels = s23_lvls, ordered = TRUE, exclude = NA),
     `venue other text` = `If you use any other criteria, indicate here which one_1`,
     ## correlation of venue & paper correlation 
     `correlation of venue & paper quality` = factor(
@@ -125,18 +131,3 @@ skimr::skim(clean)
 ## Write data -----
 readr::write_rds(clean, "./data/clean_survey_pilot.rds")
 
-
-# ### Split data on type of response ------
-# clean_freeform <- clean %>% ## Freeform text fields
-#   dplyr::select("timestamp",
-#                 "source other text",   ## ~col 12
-#                 "citation other text", ## ~col 24
-#                 "venue other text",    ## ~col 36
-#                 "other comments text") ## ~col 37
-# 
-# clean_demo_likert <- clean %>% ## Demographic and 5 pt likert scale data
-#   dplyr::select(!"consent",             ##  col 2
-#                 !"source other text",   ## ~col 12
-#                 !"citation other text", ## ~col 24
-#                 !"venue other text",    ## ~col 36
-#                 !"other comments text") ## ~col 37

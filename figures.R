@@ -3,6 +3,7 @@ require("tidyverse")
 require("skimr")
 require("likert")
 require("corrplot")
+require("patchwork")
 ##
 # require(psych)
 # require(MOTE)
@@ -35,20 +36,31 @@ colnames(s3) <- substr(colnames(s3), 7, 100) ## Remove leading 'venue '
 
 
 ### Likert objects -----
-## to plot, call plot(likert_obt)
+## to plot, call plot(likert_obj)
+
+## Doesn't like ordered factors??
 likert_s1 <- s1 %>% as.data.frame() %>% likert()
 likert_s2 <- s2 %>% as.data.frame() %>% likert()
 likert_s3 <- s3 %>% as.data.frame() %>% likert()
 
 ## saving
 likert_out1 <- plot(likert_s1) + ggtitle("Section 1, frequency of use when sourcing papers in liturature review")
+likert_out2 <- plot(likert_s2) + ggtitle("Section 2, ...")
+likert_out3 <- plot(likert_s3) + ggtitle("Section 3, ...")
+
 ggsave("likert_section1.pdf", likert_out1, "pdf", "figures",
        width = 8, height = 3, units = "in")
 
+likert_pw <- likert_out1 / likert_out2 / likert_out3
+ggsave("likert_all.pdf", likert_pw, "pdf", "figures",
+       width = 8, height = 10, units = "in")
+
 
 ### Correlation ---
+dat_b <- cbind(s1[, -ncol(s1)], s2[, -ncol(s2)], s3[, -ncol(s3)]) %>% lapply(as.numeric) %>% as_tibble()
+corr_b <- dat_b %>% cor(use = 'pairwise.complete.obs', method = 'spearman')
 
-corr_s1 <- lapply(s1, as.numeric) %>% as.data.frame() %>%
+corr_s1 <- s1[, -ncol(s1)] %>% lapply(as.numeric) %>% as.data.frame() %>%
   cor(use = 'pairwise.complete.obs', method = 'spearman')
 corr_s2 <- lapply(s2, as.numeric) %>% as.data.frame() %>%
   cor(use = 'pairwise.complete.obs', method = 'spearman')
@@ -57,10 +69,10 @@ corr_s3 <- lapply(s3, as.numeric) %>% as.data.frame() %>%
 
 ## Saving Correlation plots mock ups
 path <- "./figures/"
-corr_s1 <- cor(mtcars) ## correlation for pilot is too sparse
-name <- "corr_s1.pdf"
+corr_ex <- cor(mtcars) ## correlation for pilot is too sparse
+name <- "corr_mtcars.pdf"
 pdf(name)
-corrplot.mixed(corr_s1, lower = 'number', upper = 'ellipse',
+corrplot.mixed(corr_ex, lower = 'number', upper = 'ellipse',
                             order = 'FPC') ## "AOE", "FPC", "hclust"
 dev.off()
 file.copy(name, to = paste0(path, name), overwrite = TRUE)
