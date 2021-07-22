@@ -4,7 +4,7 @@ require("skimr")
 
 ### Import data ------
 ## pilot data -- NOT IEEE
-raw <- readr::read_csv("./data/raw_survey_pilot_v2.csv") 
+raw <- readr::read_csv("./data/raw_Citation criteria, IEEE VIS_v3form.csv") 
 dim(raw)
 colnames(raw)
 
