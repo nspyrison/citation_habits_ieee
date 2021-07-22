@@ -68,12 +68,29 @@ corr_s3 <- lapply(s3, as.numeric) %>% as.data.frame() %>%
   cor(use = 'pairwise.complete.obs', method = 'spearman')
 
 ## Saving Correlation plots
-corr_ex <- cor(mtcars) ## correlation for pilot is too sparse
 path <- "./figures/"
-name <- "corr_mtcars.pdf"
+name <- "corr_section1.pdf"
 pdf(name)
-corrplot.mixed(corr_ex, lower = 'number', upper = 'ellipse',
+corrplot.mixed(corr_s1, lower = 'number', upper = 'ellipse',
                             order = 'FPC') ## "AOE", "FPC", "hclust"
+dev.off()
+file.copy(name, to = paste0(path, name), overwrite = TRUE)
+file.remove(name)
+
+path <- "./figures/"
+name <- "corr_section2.pdf"
+pdf(name)
+corrplot.mixed(corr_s2, lower = 'number', upper = 'ellipse',
+               order = 'FPC') ## "AOE", "FPC", "hclust"
+dev.off()
+file.copy(name, to = paste0(path, name), overwrite = TRUE)
+file.remove(name)
+
+path <- "./figures/"
+name <- "corr_section3.pdf"
+pdf(name)
+corrplot.mixed(corr_s3, lower = 'number', upper = 'ellipse',
+               order = 'FPC') ## "AOE", "FPC", "hclust"
 dev.off()
 file.copy(name, to = paste0(path, name), overwrite = TRUE)
 file.remove(name)

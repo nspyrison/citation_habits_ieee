@@ -21,10 +21,6 @@ s1_lvls <- c("Never", "Rarely", "Sometimes", "Frequently", "Always")
 s23_lvls <- c("Not at all important", "Slightly important", "Moderately important", "Very important", "Extremely important")
 corr_lvls <- c("Not correlated", "Weak positive correlation", "Medium positive correlation", "Fairly high positive correlation", "Strong positive correlation")
 
-## Deal with stubborn cases:
-raw$`How correlated do you think the quality of a venue is with the quality of its papers?` <-
-  factor(corr_lvls[raw$`How correlated do you think the quality of a venue is with the quality of its papers?`],
-         levels = corr_lvls, ordered = TRUE, exclude = NA)
 
 ## Clean data -----
 clean <-
@@ -65,28 +61,28 @@ clean <-
     `source other text` = `If you use any other source, indicate here which one`,
     ## Section 2, importance for reading paper in detail:
     `read available research materials` = factor(
-      `How important are the following criteria when deciding whether or not to read a paper in detail? [Availability of research materials]`,
+      `How important are the following criteria when deciding whether or not to read a paper in detail? Assume that you have all of this information available to you. [Availability of research materials]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read author familiarity` = factor(
-      `How important are the following criteria when deciding whether or not to read a paper in detail? [Personal familiarity with authors]`,
+      `How important are the following criteria when deciding whether or not to read a paper in detail? Assume that you have all of this information available to you. [Personal familiarity with authors]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read recency of publication` = factor(
-      `How important are the following criteria when deciding whether or not to read a paper in detail? [Recency of the publication]`,
+      `How important are the following criteria when deciding whether or not to read a paper in detail? Assume that you have all of this information available to you. [Recency of the publication]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read authors institution` = factor(
-      `How important are the following criteria when deciding whether or not to read a paper in detail? [Institutional affiliation of the authors]`,
+      `How important are the following criteria when deciding whether or not to read a paper in detail? Assume that you have all of this information available to you. [Institutional affiliation of the authors]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read publication venue` = factor(
-      `How important are the following criteria when deciding whether or not to read a paper in detail? [Publication venue]`,
+      `How important are the following criteria when deciding whether or not to read a paper in detail? Assume that you have all of this information available to you. [Publication venue]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read data available` = factor(
-      `How important are the following criteria when deciding whether or not to read a paper in detail? [Availability of data]`,
+      `How important are the following criteria when deciding whether or not to read a paper in detail? Assume that you have all of this information available to you. [Availability of data]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read pre-registration` = factor(
-      `How important are the following criteria when deciding whether or not to read a paper in detail? [Availability of pre-registration/study registration]`,
+      `How important are the following criteria when deciding whether or not to read a paper in detail? Assume that you have all of this information available to you. [Availability of pre-registration/study registration]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read usage metrics` = factor(
-      `How important are the following criteria when deciding whether or not to read a paper in detail? [Usage metrics (downloads, citations, altmetric)]`,
+      `How important are the following criteria when deciding whether or not to read a paper in detail? Assume that you have all of this information available to you. [Usage metrics (downloads, citations, altmetric)]`,
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `read other rank` = factor(
       `...and how important it is [Other criteria]`,
@@ -119,8 +115,8 @@ clean <-
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `venue other text` = `If you use any other criteria, indicate here which one_1`,
     ## correlation of venue & paper correlation 
-    `correlation of venue & paper quality` = factor(
-      `How correlated do you think the quality of a venue is with the quality of its papers?`,
+    `correlation of venue & paper quality` =  factor(
+      corr_lvls[raw$`How correlated do you think the quality of a venue is with the quality of its research papers?`],
       levels = corr_lvls, ordered = TRUE, exclude = NA),
     ## Other freeform
     `other comments text` = `Are there any other thoughts or comments you wish to share with us?`
