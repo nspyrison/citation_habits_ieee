@@ -118,8 +118,9 @@ clean <-
     `correlation of venue & paper quality` =  factor(
       corr_lvls[raw$`How correlated do you think the quality of a venue is with the quality of its research papers?`],
       levels = corr_lvls, ordered = TRUE, exclude = NA),
-    ## Other freeform
-    `other comments text` = `Are there any other thoughts or comments you wish to share with us?`
+    ## Other freeform text
+    `other comments text` = `Are there any other thoughts or comments you wish to share with us?`,
+    rownum = 1:n()
   )
 skimr::skim(clean)
 
