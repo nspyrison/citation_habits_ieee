@@ -16,7 +16,7 @@ require("hrbrthemes")
 # require(semPlot)
 
 ## read the data ------
-dat <- readr::read_rds("./data/clean_survey_pilot.rds")
+dat <- readr::read_rds("./data/clean_survey.rds")
 
 ## skim
 dim(dat)
@@ -25,7 +25,7 @@ str(dat)
 
 ## Sections partitions (of likert items) -----
 ## Section 1, Sourcing papers
-s1 <- dat[, 5:12] 
+s1 <- dat[, 5:12]
 colnames(s1) <- substr(colnames(s1), 8, 100) ## Remove leading 'source '
 ## Section 2, reading papers in detail
 s2 <- dat[, 14:22]
@@ -67,11 +67,12 @@ corr_s2 <- lapply(s2, as.numeric) %>% as.data.frame() %>%
 corr_s3 <- lapply(s3, as.numeric) %>% as.data.frame() %>%
   cor(use = 'pairwise.complete.obs', method = 'spearman')
 
+
 ## Saving Correlation plots
 path <- "./figures/"
-name <- "corr_section1.pdf"
+name <- "corr_all.pdf"
 pdf(name)
-corrplot.mixed(corr_s1, lower = 'number', upper = 'ellipse',
+corrplot.mixed(corr_b, lower = 'number', upper = 'ellipse',
                             order = 'FPC') ## "AOE", "FPC", "hclust"
 dev.off()
 file.copy(name, to = paste0(path, name), overwrite = TRUE)

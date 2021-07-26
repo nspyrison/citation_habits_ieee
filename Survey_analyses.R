@@ -164,14 +164,20 @@ summary(base)$coefficients
 
 ## (5) Factor analysis/PCA ------
 str(dat_mm)
-dat_num <- dat_mm[, c(3:10, 12:19, 21:27, 29)] %>% spinifex::scale_sd()
+dat_num <- dat_mm[, c(4:10, 12:19, 21:27, 29)] %>% spinifex::scale_sd()
 (pca_obj <- prcomp(dat_num))
 
-psych::fa.parallel(dat_num)
+psych::fa.parallel(cor(dat_num, method = "spearman")) ## 7 on racked cor
+psych::fa.parallel(dat_num) ## 2 on data
 
-fa3 <- fa(dat_num, nfactors = 3, rotate = 'oblimin') 
-fa3
-fa.diagram(fa3)
+fa2 <- fa(dat_num, 
+          nfactors = 2, rotate = 'oblimin') 
+fa7 <- fa(cor(dat_num, method = "spearman"), 
+          nfactors = 7, rotate = 'oblimin') 
+fa2
+fa7
+fa.diagram(fa2)
+fa.diagram(fa7)
 
 ### Intrinsic dimension estimations with Rdimtools.
 
@@ -204,5 +210,6 @@ ide_vect <- function(data, inc_slow = FALSE){
   names(ret) <- c(nms)
   return(ret)
 }
-ide_vect(dat_num)
+est_vec <- ide_vect(dat_num)
+summary(est_vec)
 #system.time(print(ide_vect(dat_num, inc_slow = TRUE)))

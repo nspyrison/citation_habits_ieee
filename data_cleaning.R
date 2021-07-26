@@ -4,7 +4,7 @@ require("skimr")
 
 ### Import data ------
 ## pilot data -- NOT IEEE
-raw <- readr::read_csv("./data/raw_Citation criteria, IEEE VIS_v3form.csv") 
+raw <- readr::read_csv("./data/raw_Citation criteria, IEEE VIS_38respondents.csv") 
 dim(raw)
 colnames(raw)
 
@@ -126,5 +126,5 @@ skimr::skim(clean)
 
 
 ## Write data -----
-readr::write_rds(clean, "./data/clean_survey_pilot.rds")
+readr::write_rds(clean, "./data/clean_survey.rds")
 
