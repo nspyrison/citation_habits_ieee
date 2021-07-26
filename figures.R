@@ -78,23 +78,6 @@ dev.off()
 file.copy(name, to = paste0(path, name), overwrite = TRUE)
 file.remove(name)
 
-path <- "./figures/"
-name <- "corr_section2.pdf"
-pdf(name)
-corrplot.mixed(corr_s2, lower = 'number', upper = 'ellipse',
-               order = 'FPC') ## "AOE", "FPC", "hclust"
-dev.off()
-file.copy(name, to = paste0(path, name), overwrite = TRUE)
-file.remove(name)
-
-path <- "./figures/"
-name <- "corr_section3.pdf"
-pdf(name)
-corrplot.mixed(corr_s3, lower = 'number', upper = 'ellipse',
-               order = 'FPC') ## "AOE", "FPC", "hclust"
-dev.off()
-file.copy(name, to = paste0(path, name), overwrite = TRUE)
-file.remove(name)
 
 ### Other corrplot options
 # corrplot(corr_s1, method = 'number')
@@ -117,13 +100,14 @@ file.remove(name)
 ## Change character to factor, include counts in the levels of sex?
 str(clean)
 sub <- clean %>% select("timestamp", "position", "years vis experience")
-(time_hist <- sub %>% ggplot(aes(timestamp)) + geom_density() +
-  theme_ipsum())
+(time_hist <- sub %>% ggplot(aes(timestamp)) + 
+    geom_density() +
+    theme_ipsum())
 (demographics <- ggplot(sub, aes(position, `years vis experience`)) +
     ## categorical violine plots?
     geom_violin(width=2.1, size=0.2) +
-    scale_fill_viridis(discrete=TRUE) +
-    scale_color_viridis(discrete=TRUE) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    viridis::scale_color_viridis(discrete = TRUE) +
     theme_ipsum() +
     theme(legend.position="none") +
     coord_flip() + # This switch X and Y axis and allows to get the horizontal version
