@@ -4,7 +4,7 @@ require("skimr")
 
 ### Import data ------
 ## pilot data -- NOT IEEE
-raw <- readr::read_csv("./data/raw_Citation criteria, IEEE VIS_38respondents.csv") 
+raw <- readr::read_csv("./data/raw_Citation criteria, IEEE VIS_44resp.csv") 
 dim(raw)
 colnames(raw)
 
@@ -115,7 +115,7 @@ clean <-
       levels = s23_lvls, ordered = TRUE, exclude = NA),
     `venue other text` = `If you use any other criteria, indicate here which one_1`,
     ## correlation of venue & paper correlation 
-    `correlation of venue & paper quality` =  factor(
+    `quality correlation` = factor(
       corr_lvls[raw$`How correlated do you think the quality of a venue is with the quality of its research papers?`],
       levels = corr_lvls, ordered = TRUE, exclude = NA),
     ## Other freeform text
