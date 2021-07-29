@@ -4,7 +4,7 @@ require("skimr")
 
 ### Import data ------
 ## pilot data -- NOT IEEE
-raw <- readr::read_csv("./data/raw_Citation criteria, IEEE VIS_44resp.csv") 
+raw <- readr::read_csv("./data/raw_Citation criteria, IEEE VIS_46resp.csv") 
 dim(raw)
 colnames(raw)
 
@@ -147,6 +147,15 @@ clean <- clean %>% mutate(
 ## reverse level order
 clean$position <- factor(clean$position, levels = rev(levels(clean$position)))
 str(clean)
+
+## Pct NA TEXT
+# sum(is.na(clean$`source other text`)) / nrow(clean)
+# sum(is.na(clean$`read other text`))   / nrow(clean)
+# sum(is.na(clean$`venue other text`))  / nrow(clean)
+(sum(is.na(clean$`source other text`)) +
+sum(is.na(clean$`read other text`))   +
+sum(is.na(clean$`venue other text`)) ) / (3*nrow(clean))
+sum(is.na(clean$`other comments text`)) / nrow(clean)
 
 ## Write data -----
 readr::write_rds(clean, "./data/clean_survey.rds")

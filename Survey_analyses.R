@@ -14,6 +14,8 @@ require("performance") ## tidy model eval
 dat <- readr::read_rds("./data/clean_survey.rds")
 dim(dat)
 colnames(dat)
+pos_tbl <- table(dat$position)
+names_to_keep <- names(pos_tbl)[pos_tbl >= 3]
 
 ### OSF analyses section:
 # The analysis process will follow a similar method as used in a related article by Soderberg et al. on the credibility of preprint [1] (which we will acknowledge in our manuscript). This will be based on the R scripts found in their OSF repository [2]. 
@@ -66,15 +68,14 @@ readr::write_rds(dat_longer_grp, "./data/clean_dat_longer_grp.rds")
 
 ## 3) Mixed model tables/coef (lmer) -----
 colnames(dat_longer)
-base <- lmer(response ~ position * `years vis experience` + (1 | participant_rownum) + (1 | likert_question), dat_longer)
-base_wo_yrs <- lmer(response ~ position + (1 | participant_rownum) + (1 | likert_question), dat_longer)
+base <- lmer(response ~ position + `years vis experience` + likert_question + (1 | participant_rownum) + (1 | likert_item), dat_longer)
+pos.exp <- lmer(response ~ position * `years vis experience` + likert_question + (1 | participant_rownum) + (1 | likert_item), dat_longer)
 
 # quality.pos <- lmer(`quality correlation` ~ position + `years vis experience` +
 #                       (1 | participant_rownum) + likert_question, dat_longer)
 # quality.yrs <- lmer(`years vis experience` ~ position + `years vis experience` +
 #                       (1 | participant_rownum) + likert_question, dat_longer)
-model_ls <- list(base = base,
-                 base_wo_yrs =base_wo_yrs)
+model_ls <- list(base = base, pos.exp = pos.exp)
                  # ,quality.pos = quality.pos,
                  # quality.yrs = quality.yrs)
 ### Validate that the error/residuals are fine to support application of bootstraping
@@ -122,6 +123,7 @@ question_r2 <- ((base_anova[2,3]) / base_anova[2,4] * base_anova[2,5]) /
 
 ### Model coefficients ------
 summary(base)$coefficients
+summary(pos.exp)$coefficients
 
 
 ## (4) demographic heatmap ------
@@ -129,7 +131,7 @@ summary(base)$coefficients
 
 ## (5) Factor analysis/PCA ------
 str(dat_sub)
-dat_num <- cbind(as.integer(dat_sub$position), dat_sub[, 4:25]) %>% spinifex::scale_01()
+dat_num <- cbind(as.integer(dat_sub$position), dat_sub[, 4:25])# %>% spinifex::scale_01()
 (pca_obj <- prcomp(dat_num))
 
 psych::fa.parallel(cor(dat_num, method = "spearman"), n.obs = nrow(dat_num)) ## 8 on ranked cor

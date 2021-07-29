@@ -48,6 +48,8 @@ my_theme <- list(
   theme_bw(),
   scale_color_viridis_d(),
   scale_fill_viridis_d(), 
+  geom_hline(yintercept = c(0, 5),
+             alpha = .8, color = "black", linetype = 1L),
   geom_hline(yintercept = mean(dat_longer_grp$`quality correlation`),
              alpha = .8, color = "grey20", linetype = 2L),
   theme(legend.position = "bottom",
@@ -111,19 +113,6 @@ my_ggpubr_violin <- function(df = dat_longer_grp, x = "position",
 ggsave("quality_violins.pdf", quality_violins, "pdf", "figures",
        width = 6, height = 4, units = "in")
 
-my_ggpubr_scatter <- function(df = dat_longer_grp, x = "years vis experience", shape = "position",
-                              y = "quality correlation", title = waiver(), subtitle = waiver()){
-  ## Plot
-  ggscatter(df, x = x, y = y, shape = shape, color = shape,
-            add = "reg.line",
-            add.params = list(color = "blue", fill = "lightgray"), # Customize reg. line
-            conf.int = TRUE, # Add confidence interval
-            cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
-            cor.coeff.args = list(method = "spearman", label.x = 3, label.sep = "\n")
-  ) +
-    labs(y = "Likert item: subjective correlation of a venue and its papers' quality \n [1 = no corrlation, 5 = Strong positive correlation]")
-}
-(quality_scatter <- my_ggpubr_scatter())
 
 
 ## 2) Correlation figures ------
@@ -140,8 +129,54 @@ dev.off()
 file.copy(name, to = paste0(path, name), overwrite = TRUE)
 file.remove(name)
 
+## New 2) mean/sd table -----
 
+dat_longer_wider <- dat_longer %>%
+  dplyr::select(likert_item, position_disp, response) %>%
+  #unique.data.frame() %>% 
+  tidyr::pivot_wider( ## Doesn't like factors
+    #cols = `source ACM/IEEE DL`:`venue research scope`, #`venue other rank`,
+    names_from = position_disp, values_from = response
+  )
+str(dat_longer)
+str(dat_longer_wider)
 
+## this woud be ~ 1/4 of the table when structured
+mn_sd_tbl <- 
+  cbind(dat_longer_wider$likert_item,
+        lapply(dat_longer_wider$`Graduate Student\n n = 11`, mean)        %>% unlist %>% round(1),
+        lapply(dat_longer_wider$`Graduate Student\n n = 11`, sd)          %>% unlist %>% round(1),
+        lapply(dat_longer_wider$`Assistant Professor\n n = 7`, mean)      %>% unlist %>% round(1),
+        lapply(dat_longer_wider$`Assistant Professor\n n = 7`, sd)        %>% unlist %>% round(1),
+        lapply(dat_longer_wider$`Associate Professor\n n = 12`, mean)     %>% unlist %>% round(1),
+        lapply(dat_longer_wider$`Associate Professor\n n = 12`, sd)       %>% unlist %>% round(1),
+        lapply(dat_longer_wider$`Research/Staff Scientist\n n = 7`, mean) %>% unlist %>% round(1),
+        lapply(dat_longer_wider$`Research/Staff Scientist\n n = 7`, sd)   %>% unlist %>% round(1)
+  ) %>% as.data.frame()
+colnames(mn_sd_tbl) <- c("Grad mean", "Grad sd",
+                         "Assistant Prof mean", "Assistant Prof sd",
+                         "Associate Prof mean", "Associate Prof sd",
+                         "Scientist mean", "Scientist sd")
+
+g_mean <- mean(dat_longer_grp$`quality correlation`) ## global mean
+.col_num_x <- which(colnames(df) == x)
+.col_num_y <- which(colnames(df) == y)
+df_ci <- df[, c(1L, .col_num_x, .col_num_y)] %>% unique.data.frame() %>% as.data.frame()
+ci_bounds_df <- data.frame(NULL)
+for(i in 1:.n_lvls){
+  .idx <- df_ci[, 2] == .x_lvls[i]
+  .vec <- df_ci[.idx, 3]
+  .mn <- mean(.vec)
+  .sd <- sd(.vec)
+  .n <- length(.vec)# n  participants
+  .err <- qnorm(0.975) * .sd / sqrt(.n) ## 1 sided tail for alpha = .05
+  t_val <- (.mn - g_mean) / .sd / sqrt(.n)
+  p_val <- dt(t_val, df = .n -1)
+  ci_bounds_df <- rbind(
+    ci_bounds_df, c(.x_lvls[i], .n, round(.mn - .err, 2), round(.mn, 2),  round(.mn + .err, 2),
+                    round(t_val, 2), round(p_val, 2), paste0(.x_lvls[i], "\n n = ", .n))
+  )
+}
 
 
 ## 3) mixed model -----
@@ -151,7 +186,7 @@ file.remove(name)
 
 ## Change character to factor, include counts in the levels of sex?
 str(clean)
-sub <- clean[, c("timestamp", "position_disp", "years vis experience")]
+sub <- clean[, c("timestamp", "position", "position_disp", "years vis experience")]
 # (time_hist <- sub %>% ggplot(aes(timestamp)) + 
 #     geom_density() +
 #     theme_ipsum())
@@ -167,20 +202,11 @@ sub <- clean[, c("timestamp", "position_disp", "years vis experience")]
     theme(legend.position="none") +
     coord_flip() + # This switch X and Y axis and allows to get the horizontal version
     ylab("Years experience of data visualization") +
-    #ylab("Assigned Probability (%)") +
-    ## heatmap with counts.
-    # stat_bin2d(aes(fill = after_stat(count))) +
-    # geom_text(aes(label = after_stat(count)), stat = "bin2d") +
-    # scale_fill_gradient(low = "lightpink", high = "firebrick", na.value = NA) +
-    # theme_bw() +
-    # theme(axis.text.x = element_text(angle = 90, hjust = 1),
-    #       # legend.position = "bottom",
-    #       # legend.direction = "horizontal",
-    #       legend.margin = margin(0, 0, 0, 0)) +
+    xlab("Position") +
     ggtitle("Participant demographics"))
-if(F)
-  ggsave(filename = "./figures/demographics.pdf",
-         plot = demographics / time_hist, device = "pdf", width = 4, height = 2)
+
+ggsave(filename = "./figures/demographics.pdf",
+       plot = demographics, device = "pdf", width = 6, height = 4)
 
 
 ## (5) Factor analysis/PCA -----
