@@ -10,19 +10,10 @@ require("lmerTest") ## p val interpretation of lme4 tests
 require("merTools")
 require("performance") ## tidy model eval
 
-
 ## read the data ------
 dat <- readr::read_rds("./data/clean_survey.rds")
-
-## skim
 dim(dat)
-dat %>% skimr::skim()
 colnames(dat)
-
-## Sections 1:3, and paper/venue quality correlation.
-#dat_violin <- dat[, c(3:11, 14:21, 24:30, 33)]
-dat_likert <- dat[, c(5:12, 14:22, 24:31, 33)]
-colnames(dat_likert)
 
 ### OSF analyses section:
 # The analysis process will follow a similar method as used in a related article by Soderberg et al. on the credibility of preprint [1] (which we will acknowledge in our manuscript). This will be based on the R scripts found in their OSF repository [2]. 
@@ -44,49 +35,11 @@ colnames(dat_likert)
 ## (5) factor analysis/PCA, produce below
 
 ## 0) Pivot longer -----
-str(dat)
-dat_sub <- cbind(participant_rownum = 1:nrow(dat),
-                 dat[, c(3:12, 14:22, 24:31, 33)])
-
+colnames(dat)
+dat_sub <- dat[, c(1, 4, 36, 5:12, 16:22, 26:31, 34)]
 ## coerce to integer for pivoting
-dat_sub <- dat_sub %>% mutate(
-  .keep = "none",
-  participant_rownum = participant_rownum,
-  position = position,
-  `years vis experience` = `years vis experience`,
-  ## S1
-  `source ACM/IEEE DL`       = as.integer(`source ACM/IEEE DL`),
-  `source relevant articles` = as.integer(`source relevant articles`),
-  `source ResearchGate`      = as.integer(`source ResearchGate`),
-  `source PubMed`            = as.integer(`source PubMed`),
-  `source peer/mentor`       = as.integer(`source peer/mentor`),
-  `source journal/confrence` = as.integer(`source journal/confrence`),
-  `source Google Scholar`    = as.integer(`source Google Scholar`),
-  #`source other rank`        = as.integer(`source other rank`),
-  ## S2
-  `read available research materials` = as.integer(`read available research materials`),
-  `read author familiarity`           = as.integer(`read author familiarity`),
-  `read recency of publication`       = as.integer(`read recency of publication`),
-  `read authors institution`          = as.integer(`read authors institution`),
-  `read publication venue`            = as.integer(`read publication venue`),
-  `read data available`               = as.integer(`read data available`),
-  `read pre-registration`             = as.integer(`read pre-registration`),
-  `read usage metrics`                = as.integer(`read usage metrics`),
-  #`read other rank`                   = as.integer(`read other rank`),
-  ## S3
-  `venue attendance/citations/downloads`    = as.integer(`venue attendance/citations/downloads`),
-  `venue audience scope`                    = as.integer(`venue audience scope`),
-  `venue acceptance rate/total submissions` = as.integer(`venue acceptance rate/total submissions`),
-  `venue ranking system`                    = as.integer(`venue ranking system`),
-  `venue metrics`                           = as.integer(`venue metrics`),
-  `venue peer/mentor opinion`               = as.integer(`venue peer/mentor opinion`),
-  `venue research scope`                    = as.integer(`venue research scope`),
-  #`venue other rank`                        = as.integer(`venue other rank`),
-  ##
-  `quality correlation` = as.integer(`quality correlation`)
-)
-
-str(dat_sub)
+dat_sub[, 5:25] <- lapply(dat_sub[, 5:25], as.integer)
+## Pivot longer
 dat_longer <- dat_sub %>%
   tidyr::pivot_longer( ## Doesn't like factors
     cols = `source ACM/IEEE DL`:`venue research scope`, #`venue other rank`,
@@ -102,42 +55,27 @@ dat_longer <- dat_sub %>%
     ), levels = c("source", "read", "venue")
   ))
 str(dat_longer)
-table(dat$position)
-
-
-
-### Group/drop levels with few obs -----
-dat_longer_grp <- dat_longer %>% mutate(
-  .keep = "unused",
-  position = case_when(
-    position == "Graduate Student (Masters, PhD)"    ~ "Graduate Student",
-    position == "Post-doctoral Researcher"           ~ "Post-doctoral",
-    position == "Assistant Professor, or equivalent" ~ "Assistant Professor",
-    position == "Associate Professor, or equivalent" ~ "Associate Professor",
-    position == "Research Scientist/Staff Scientist, or equivalent" ~ "Research/Staff Scientist",
-    TRUE ~ "REMOVE")
-)
-## and remove the "REMOVE" rows.
-dat_longer_grp <- dat_longer_grp[which(dat_longer_grp$position != "REMOVE"), ]
-dat_longer_grp$position <- factor(
-  dat_longer_grp$position, 
-  levels = c("Graduate Student", "Post-doctoral", "Assistant Professor",
-             "Associate Professor", "Research/Staff Scientist"))
+pos_tbl <- table(dat$position)
+names_to_keep <- names(pos_tbl)[pos_tbl >= 3]
+## remove rows less than this
+dat_longer_grp <- dat_longer[which(dat_longer$position %in% names_to_keep), ]
+str(dat_longer_grp)
 
 ## Save dat_longer for figures -----
 readr::write_rds(dat_longer_grp, "./data/clean_dat_longer_grp.rds")
 
 ## 3) Mixed model tables/coef (lmer) -----
 colnames(dat_longer)
-base <- lmer(response ~ position + `years vis experience` + (1 | participant_rownum) + (1 | likert_question), dat_longer)
-quality.pos <- lmer(`quality correlation` ~ position + `years vis experience` +
-                      (1 | participant_rownum) + likert_question, dat_longer)
-quality.yrs <- lmer(`years vis experience` ~ position + `years vis experience` +
-                      (1 | participant_rownum) + likert_question, dat_longer)
+base <- lmer(response ~ position * `years vis experience` + (1 | participant_rownum) + (1 | likert_question), dat_longer)
+base_wo_yrs <- lmer(response ~ position + (1 | participant_rownum) + (1 | likert_question), dat_longer)
 
-model_ls <- list(base = base)
-#,
-                 # quality.pos = quality.pos,
+# quality.pos <- lmer(`quality correlation` ~ position + `years vis experience` +
+#                       (1 | participant_rownum) + likert_question, dat_longer)
+# quality.yrs <- lmer(`years vis experience` ~ position + `years vis experience` +
+#                       (1 | participant_rownum) + likert_question, dat_longer)
+model_ls <- list(base = base,
+                 base_wo_yrs =base_wo_yrs)
+                 # ,quality.pos = quality.pos,
                  # quality.yrs = quality.yrs)
 ### Validate that the error/residuals are fine to support application of bootstraping
 # Plot the binned residuals as recommended by Gelman and Hill (2007)
@@ -190,11 +128,11 @@ summary(base)$coefficients
 
 
 ## (5) Factor analysis/PCA ------
-str(dat_mm)
-dat_num <- dat_mm[, c(4:10, 12:19, 21:27, 29)] %>% spinifex::scale_sd()
+str(dat_sub)
+dat_num <- cbind(as.integer(dat_sub$position), dat_sub[, 4:25]) %>% spinifex::scale_01()
 (pca_obj <- prcomp(dat_num))
 
-psych::fa.parallel(cor(dat_num, method = "spearman")) ## 7 on racked cor
+psych::fa.parallel(cor(dat_num, method = "spearman"), n.obs = nrow(dat_num)) ## 8 on ranked cor
 psych::fa.parallel(dat_num) ## 2 on data
 
 fa2 <- fa(dat_num,
@@ -237,7 +175,9 @@ ide_vect <- function(data, inc_slow = FALSE){
   names(ret) <- c(nms)
   return(ret)
 }
-est_vec <- ide_vect(dat_num)
+
+(est_vec <- ide_vect(dat_num))
+ide_vect(cor(dat_num, method = "spearman"))
 summary(est_vec)
 #system.time(print(ide_vect(dat_num, inc_slow = TRUE)))
 

@@ -17,9 +17,18 @@ position_lvls <- c("Graduate Student (Masters, PhD)",
                    "Research Scientist/Staff Scientist, or equivalent",
                    "Private Sector/Practitioner, or equivalent",
                    "Other")
+position_new_lvls <- c("Graduate Student",
+                       "Post-doctoral",
+                       "Assistant Professor",
+                       "Associate Professor",
+                       "Professor",
+                       "Research/Staff Scientist",
+                       "Private Sector/Practitioner",
+                       "Other")
 s1_lvls <- c("Never", "Rarely", "Sometimes", "Frequently", "Always")
 s23_lvls <- c("Not at all important", "Slightly important", "Moderately important", "Very important", "Extremely important")
 corr_lvls <- c("Not correlated", "Weak positive correlation", "Medium positive correlation", "Fairly high positive correlation", "Strong positive correlation")
+
 
 
 ## Clean data -----
@@ -27,6 +36,7 @@ clean <-
   raw %>%
   dplyr::mutate(
     .keep = "none",
+    participant_rownum = 1:n(),
     timestamp = lubridate::as_datetime(Timestamp),
     consent = `Consent and understanding` == "I understand that my data will be used and published on a repository, and I certify that I meet the criteria for participation in this survey",
     position = factor(
@@ -119,12 +129,24 @@ clean <-
       corr_lvls[raw$`How correlated do you think the quality of a venue is with the quality of its research papers?`],
       levels = corr_lvls, ordered = TRUE, exclude = NA),
     ## Other freeform text
-    `other comments text` = `Are there any other thoughts or comments you wish to share with us?`,
-    rownum = 1:n()
+    `other comments text` = `Are there any other thoughts or comments you wish to share with us?`
   )
-skimr::skim(clean)
-
+position_cnt <- table(clean$position)
+clean <- clean %>% mutate(
+  position_disp = case_when(
+    position == position_lvls[1] ~ paste0(position_new_lvls[1], "\n n = ", position_cnt[1]),
+    position == position_lvls[2] ~ paste0(position_new_lvls[2], "\n n = ", position_cnt[2]),
+    position == position_lvls[3] ~ paste0(position_new_lvls[3], "\n n = ", position_cnt[3]),
+    position == position_lvls[4] ~ paste0(position_new_lvls[4], "\n n = ", position_cnt[4]),
+    position == position_lvls[5] ~ paste0(position_new_lvls[5], "\n n = ", position_cnt[5]),
+    position == position_lvls[6] ~ paste0(position_new_lvls[6], "\n n = ", position_cnt[6]),
+    position == position_lvls[7] ~ paste0(position_new_lvls[7], "\n n = ", position_cnt[7]),
+    position == position_lvls[8] ~ paste0(position_new_lvls[8], "\n n = ", position_cnt[8])
+  )
+)
+## reverse level order
+clean$position <- factor(clean$position, levels = rev(levels(clean$position)))
+str(clean)
 
 ## Write data -----
 readr::write_rds(clean, "./data/clean_survey.rds")
-
