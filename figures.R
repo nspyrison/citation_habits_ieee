@@ -115,19 +115,90 @@ ggsave("quality_violins.pdf", quality_violins, "pdf", "figures",
 
 
 
-## 2) Correlation figures ------
-dat_b <- cbind(s1, s2, s3) %>% lapply(as.integer) %>% as_tibble()
-corr_b <- dat_b %>% cor(use = 'pairwise.complete.obs', method = 'spearman')
-
-## Saving Correlation plots
-path <- "./figures/"
-name <- "corr_all.pdf"
-pdf(name)
-corrplot.mixed(corr_b, lower = 'number', upper = 'ellipse',
-               order = 'FPC') ## "AOE", "FPC", "hclust"
-dev.off()
-file.copy(name, to = paste0(path, name), overwrite = TRUE)
-file.remove(name)
+#### table by academic discipline (Fig7)####
+if(F){
+  preprintcred_means_by_discipline <- survey_data %>%
+    select(-c(consent, HDI_2017)) %>%
+    group_by(discipline_collapsed) %>%
+    skim %>%
+    yank("numeric") %>%
+    rename(question = skim_variable) %>%
+    select(discipline_collapsed, question, mean, sd) %>%
+    filter(grepl('preprint', question)) %>%
+    filter(!is.na(mean)) %>%
+    pivot_wider(names_from = discipline_collapsed, 
+                names_glue = "{discipline_collapsed}_{.value}",
+                values_from = c(mean, sd)) %>%
+    mutate(var_name = case_when(question == 'preprint_cred1_1' ~ "Author's previous work",
+                                question == 'preprint_cred1_2' ~ "Author's institution",
+                                question == 'preprint_cred1_3' ~ "Professional identity links",
+                                question == 'preprint_cred1_4' ~ "COI disclosures",
+                                question == 'preprint_cred1_5' ~ "Author's level of open scholarship",
+                                question == 'preprint_cred2_1' ~ "Funders of research",
+                                question == 'preprint_cred2_2' ~ "Preprint submitted to a journal",
+                                question == 'preprint_cred2_3' ~ "Usage metrics",
+                                question == 'preprint_cred2_4' ~ "Citations of preprints",
+                                question == 'preprint_cred3_1' ~ "Anonymous comments",
+                                question == 'preprint_cred3_2' ~ "Identified comments",
+                                question == 'preprint_cred3_3' ~ "Simplified endorsements",
+                                question == 'preprint_cred4_1' ~ "Link to study data",
+                                question == 'preprint_cred4_2' ~ "Link to study analysis scripts",
+                                question == 'preprint_cred4_3' ~ "Link to materials",
+                                question == 'preprint_cred4_4' ~ "Link to pre-reg",
+                                question == 'preprint_cred5_1' ~ "Info about indep groups accessing linked info",
+                                question == 'preprint_cred5_2' ~ "Info about indep group reproductions",
+                                question == 'preprint_cred5_3' ~ "Info about indep robustness checks",
+                                TRUE ~ 'Courtney missed a variable')) %>%
+    select(var_name, starts_with('Psychology'), starts_with('Other_Social'), starts_with('Life'), starts_with('Med'), starts_with('Phy'))
+  
+  # get df of complete response Ns
+  discipline_complete_ns <- survey_data %>%
+    filter(!is.na(discipline_collapsed)) %>%
+    select(starts_with('preprint_'), discipline_collapsed) %>%
+    pivot_longer(-discipline_collapsed, names_to = 'question', values_to = 'response') %>%
+    filter(!is.na(response)) %>%
+    group_by(discipline_collapsed, question) %>%
+    tally()
+  
+  #building table
+  discipline_table <- preprintcred_means_by_discipline  %>% 
+    gt() %>%
+    tab_header(title = 'Credibility of Preprints by Discipline') %>%
+    data_color(
+      columns = ends_with('mean'),
+      colors = scales::col_numeric(
+        palette = paletteer::paletteer_d(
+          package = "RColorBrewer",
+          palette = "BrBG"
+        ),
+        domain = c(1, 5))
+    ) %>%
+    fmt_number(columns = 2:11, decimals = 2) %>%
+    cols_merge(columns = vars(Psychology_mean, Psychology_sd), pattern = '{1} ({2})') %>%
+    cols_merge(columns = vars(Life_Sciences_mean, Life_Sciences_sd), pattern = '{1} ({2})') %>%
+    cols_merge(columns = vars(Other_SocialSciences_mean, Other_SocialSciences_sd), pattern = '{1} ({2})') %>%
+    cols_merge(columns = vars(Phys_Math_mean, Phys_Math_sd), pattern = '{1} ({2})') %>%
+    cols_merge(columns = vars(Med_Health_mean, Med_Health_sd), pattern = '{1} ({2})') %>%
+    tab_spanner(label = 'Psychology', columns = 'Psychology_mean') %>%
+    tab_spanner(label = 'Life Sci (Bio)', columns = 'Life_Sciences_mean') %>%
+    tab_spanner(label = 'Med & Health Sci', columns = 'Med_Health_mean') %>%
+    tab_spanner(label = 'Soc Sci', columns = 'Other_SocialSciences_mean') %>%
+    tab_spanner(label = 'Math & Phys Sci', columns = 'Phys_Math_mean') %>%
+    cols_align(align = 'center', columns = ends_with('mean')) %>%
+    cols_label(var_name = 'Potential Icon',
+               Psychology_mean =  paste0('n = ', discipline_complete_ns %>% filter(discipline_collapsed == 'Psychology') %>% summarize(min = min(n)) %>% pull(min),'-', 
+                                         discipline_complete_ns %>% filter(discipline_collapsed == 'Psychology') %>% summarize(max = max(n)) %>% pull(max)),
+               Life_Sciences_mean =  paste0('n = ', discipline_complete_ns %>% filter(discipline_collapsed == 'Life_Sciences') %>% summarize(min = min(n)) %>% pull(min),'-', 
+                                            discipline_complete_ns %>% filter(discipline_collapsed == 'Life_Sciences') %>% summarize(max = max(n)) %>% pull(max)),
+               Phys_Math_mean =  paste0('n = ', discipline_complete_ns %>% filter(discipline_collapsed == 'Phys_Math') %>% summarize(min = min(n)) %>% pull(min),'-', 
+                                        discipline_complete_ns %>% filter(discipline_collapsed == 'Phys_Math') %>% summarize(max = max(n)) %>% pull(max)),
+               Med_Health_mean = paste0('n = ', discipline_complete_ns %>% filter(discipline_collapsed == 'Med_Health') %>% summarize(min = min(n)) %>% pull(min),'-', 
+                                        discipline_complete_ns %>% filter(discipline_collapsed == 'Med_Health') %>% summarize(max = max(n)) %>% pull(max)),
+               Other_SocialSciences_mean = paste0('n = ', discipline_complete_ns %>% filter(discipline_collapsed == 'Other_SocialSciences') %>% summarize(min = min(n)) %>% pull(min),'-', 
+                                                  discipline_complete_ns %>% filter(discipline_collapsed == 'Other_SocialSciences') %>% summarize(max = max(n)) %>% pull(max)))
+  
+  gtsave(discipline_table, filename = 'Fig7.png')
+}
 
 ## New 2) mean/sd table -----
 
