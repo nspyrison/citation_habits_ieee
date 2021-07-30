@@ -26,7 +26,21 @@ colnames(s2) <- substr(colnames(s2), 6, 100) ## Remove leading 'read '
 s3 <- dat[, 25:31]
 colnames(s3) <- substr(colnames(s3), 7, 100) ## Remove leading 'venue '
 
+## shorten levls for the plot
+.orig_lvls <- s2[,1] %>% pull() %>% levels()
+.new_lvls <- c("Not at all impt.", "Slightly impt.", "Moderately impt.", "Very impt.", "Extremely impt.")
 
+.cn <- colnames(s2)
+s2 <- lapply(as.data.frame(s2), function(c){
+  plyr::mapvalues(c, .orig_lvls, .new_lvls) 
+}) %>% as.data.frame()
+colnames(s2) <- .cn
+
+.cn <- colnames(s3)
+s3 <- lapply(as.data.frame(s3), function(c){
+  plyr::mapvalues(c, .orig_lvls, .new_lvls) 
+}) %>% as.data.frame()
+colnames(s3) <- .cn
 ## 1) Likert figures -----
 ## to plot, call plot(likert_obj)
 likert_s1 <- s1 %>% as.data.frame() %>% likert()
@@ -36,17 +50,18 @@ likert_s3 <- s3 %>% as.data.frame() %>% likert()
 ## saving
 likert_out1 <- plot(likert_s1) + 
   ggtitle("Section 1, frequency of use when sourcing papers during liturature review") +
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank()) 
 likert_out2 <- plot(likert_s2) +
   ggtitle("Section 2, importance for deciding wether or not to read in detail") +
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank()) +
+  scale_color_manual(labels = s23_lvls)
 likert_out3 <- plot(likert_s3) +
   ggtitle("Section 3, importance for assessing the quality of a venue") +
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank()) +
+  scale_color_manual(labels = s23_lvls)
 likert_pw <- likert_out1 / likert_out2 / likert_out3
 ggsave("likert_all.pdf", likert_pw, "pdf", "figures",
-       width = 10, height = 10, units = "in")
-## make sure 10x10 isn't distorted, make want to cut down lengend text instead
+       width = 8, height = 10, units = "in")
 
 ### Likert violins -----
 require("ggpubr")
