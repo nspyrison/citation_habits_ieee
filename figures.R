@@ -42,6 +42,7 @@ s3 <- lapply(as.data.frame(s3), function(c){
   plyr::mapvalues(c, .orig_lvls, .new_lvls) 
 }) %>% as.data.frame()
 colnames(s3) <- .cn
+
 ## 1) Likert figures -----
 ## to plot, call plot(likert_obj)
 likert_s1 <- s1 %>% as.data.frame() %>% likert()
@@ -102,7 +103,8 @@ my_ggpubr_violin <- function(df = dat_longer_grp, x = "position",
     my_theme +
     theme(legend.position = "off") +
     ggtitle(title, subtitle) +
-    labs(y = "Likert item: subjective correlation of a venue and its papers' quality \n [1 = no corrlation, 5 = Strong positive correlation]")
+    labs(x = "Position",
+         y = "Likert item: subjective correlation of a venue and its papers' quality \n [1 = no corrlation, 5 = Strong positive correlation]")
 
 }
 (quality_violins <- my_ggpubr_violin())
@@ -129,7 +131,8 @@ colnames(position_table)[1] <- "Likert item"
 require("gt")
 position_gt <- position_table %>% 
   gt() %>%
-  tab_header(title = 'Mean response of Likert item across position') %>%
+  tab_header(title = 'Response of Likert item across position',
+             subtitle = "Mean (standard deviation)") %>%
   gt::data_color(
     columns = starts_with('mean'),
     colors = scales::col_numeric(
@@ -141,11 +144,13 @@ position_gt <- position_table %>%
   cols_merge(columns = vars(`mean_Associate Professor\n n = 12`, `sd_Associate Professor\n n = 12`), pattern = '{1} ({2})') %>%
   cols_merge(columns = vars(`mean_Assistant Professor\n n = 7`,  `sd_Assistant Professor\n n = 7`), pattern = '{1} ({2})') %>%
   cols_merge(columns = vars(`mean_Graduate Student\n n = 11`, `sd_Graduate Student\n n = 11`), pattern = '{1} ({2})') %>%
+  tab_spanner("Position",
+              columns = `mean_Research/Staff Scientist\n n = 7`:`mean_Graduate Student\n n = 11`) %>% 
   cols_label(
-    `mean_Research/Staff Scientist\n n = 7` = "Research/Staff Scientist\n n = 7",
-    `mean_Associate Professor\n n = 12` = "Associate Professor\n n = 12",
-    `mean_Assistant Professor\n n = 7` = "Assistant Professor\n n = 7",
-    `mean_Graduate Student\n n = 11` = "Graduate Student\n n = 11",
+    `mean_Research/Staff Scientist\n n = 7` = "Research/Staff Scientist, n = 7",
+    `mean_Associate Professor\n n = 12` = "Associate Professor, n = 12",
+    `mean_Assistant Professor\n n = 7` = "Assistant Professor, n = 7",
+    `mean_Graduate Student\n n = 11` = "Graduate Student, n = 11",
   ) %>% 
   cols_align(align = 'center', columns = starts_with('mean'))
 gtsave(position_gt, filename = './figures/position_gt.png')
@@ -157,9 +162,9 @@ gtsave(position_gt, filename = './figures/position_gt.png')
 ## (4) demographic heatmap ------
 
 ## Change character to factor, include counts in the levels of sex?
-str(clean)
-sub <- clean[, c("timestamp", "position", "years vis experience")]
-(demographics <- 
+str(dat)
+sub <- dat[, c("timestamp", "position", "years vis experience")]
+(demographics <-
     ggplot(sub, aes(position, `years vis experience`, fill = position),
            alpha = .5) +
     geom_violin(width = 1.3) +
@@ -169,9 +174,8 @@ sub <- clean[, c("timestamp", "position", "years vis experience")]
     theme(legend.position="none") +
     coord_flip() + # This switch X and Y axis and allows to get the horizontal version
     ylab("Years experience of data visualization") +
-    xlab("position") +
+    xlab("Position") +
     ggtitle("Participant demographics"))
-
 ggsave(filename = "./figures/demographics.pdf",
        plot = demographics, device = "pdf", width = 6, height = 4)
 
