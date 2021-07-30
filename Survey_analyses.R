@@ -57,11 +57,16 @@ dat_longer <- dat_sub %>%
     ), levels = c("source", "read", "venue")
   ))
 str(dat_longer)
-pos_tbl <- table(dat$position)
-names_to_keep <- names(pos_tbl)[pos_tbl >= 3]
+.pos_tbl <- table(dat$position)
+.names_to_keep <- names(.pos_tbl)[.pos_tbl > 4]
+.r_idx_to_keep <- which(dat_longer$position %in% .names_to_keep)
 ## remove rows less than this
-dat_longer_grp <- dat_longer[which(dat_longer$position %in% names_to_keep), ]
-str(dat_longer_grp)
+dat_longer_grp <- dat_longer[.r_idx_to_keep, ]
+## and relevel what is left
+.orig_lvls <- levels(dat_longer_grp$position)
+.lvls_left <- .orig_lvls[.orig_lvls %in% .names_to_keep]
+dat_longer_grp$position <- factor(dat_longer_grp$position, levels = .lvls_left)
+table(dat_longer_grp$position)
 
 ## Save dat_longer for figures -----
 readr::write_rds(dat_longer_grp, "./data/clean_dat_longer_grp.rds")

@@ -34,20 +34,26 @@ likert_s2 <- s2 %>% as.data.frame() %>% likert()
 likert_s3 <- s3 %>% as.data.frame() %>% likert()
 
 ## saving
-likert_out1 <- plot(likert_s1) + ggtitle("Section 1, frequency of use when sourcing papers during liturature review")
-likert_out2 <- plot(likert_s2) + ggtitle("Section 2, importance for deciding wether or not to read in detail")
-likert_out3 <- plot(likert_s3) + ggtitle("Section 3, importance for assessing the quality of a venue")
-
+likert_out1 <- plot(likert_s1) + 
+  ggtitle("Section 1, frequency of use when sourcing papers during liturature review") +
+  theme(legend.title = element_blank())
+likert_out2 <- plot(likert_s2) +
+  ggtitle("Section 2, importance for deciding wether or not to read in detail") +
+  theme(legend.title = element_blank())
+likert_out3 <- plot(likert_s3) +
+  ggtitle("Section 3, importance for assessing the quality of a venue") +
+  theme(legend.title = element_blank())
 likert_pw <- likert_out1 / likert_out2 / likert_out3
 ggsave("likert_all.pdf", likert_pw, "pdf", "figures",
-       width = 8, height = 10, units = "in")
+       width = 10, height = 10, units = "in")
+## make sure 10x10 isn't distorted, make want to cut down lengend text instead
 
 ### Likert violins -----
 require("ggpubr")
 my_theme <- list(
   theme_bw(),
-  scale_color_viridis_d(),
-  scale_fill_viridis_d(), 
+  scale_color_viridis_d(name=""),
+  scale_fill_viridis_d(name=""), 
   geom_hline(yintercept = c(0, 5),
              alpha = .8, color = "black", linetype = 1L),
   geom_hline(yintercept = mean(dat_longer_grp$`quality correlation`),
@@ -56,8 +62,6 @@ my_theme <- list(
         legend.box = "vertical",
         legend.margin = margin(-6L))
 )
-lvls_left <- levels(dat_longer_grp$position)[-1:-2]
-dat_longer_grp$position <- factor(dat_longer_grp$position, levels = lvls_left)
 my_ggpubr_violin <- function(df = dat_longer_grp, x = "position",
                              y = "quality correlation", title = waiver(), subtitle = waiver()){
   ## Find height of global significance test text.
@@ -115,7 +119,7 @@ ggsave("quality_violins.pdf", quality_violins, "pdf", "figures",
 
 
 
-#### table by academic discipline (Fig7)####
+## Credibility of preprints, Fig7 ------
 if(F){
   preprintcred_means_by_discipline <- survey_data %>%
     select(-c(consent, HDI_2017)) %>%
@@ -201,57 +205,49 @@ if(F){
 }
 
 ## New 2) mean/sd table -----
+str(dat_longer_grp)
+table(dat_longer_grp$position_disp)
 
-dat_longer_wider <- dat_longer %>%
-  dplyr::select(likert_item, position_disp, response) %>%
-  #unique.data.frame() %>% 
-  tidyr::pivot_wider( ## Doesn't like factors
-    #cols = `source ACM/IEEE DL`:`venue research scope`, #`venue other rank`,
-    names_from = position_disp, values_from = response
-  )
-str(dat_longer)
-str(dat_longer_wider)
 
-## this woud be ~ 1/4 of the table when structured
-mn_sd_tbl <- 
-  cbind(dat_longer_wider$likert_item,
-        lapply(dat_longer_wider$`Graduate Student\n n = 11`, mean)        %>% unlist %>% round(1),
-        lapply(dat_longer_wider$`Graduate Student\n n = 11`, sd)          %>% unlist %>% round(1),
-        lapply(dat_longer_wider$`Assistant Professor\n n = 7`, mean)      %>% unlist %>% round(1),
-        lapply(dat_longer_wider$`Assistant Professor\n n = 7`, sd)        %>% unlist %>% round(1),
-        lapply(dat_longer_wider$`Associate Professor\n n = 12`, mean)     %>% unlist %>% round(1),
-        lapply(dat_longer_wider$`Associate Professor\n n = 12`, sd)       %>% unlist %>% round(1),
-        lapply(dat_longer_wider$`Research/Staff Scientist\n n = 7`, mean) %>% unlist %>% round(1),
-        lapply(dat_longer_wider$`Research/Staff Scientist\n n = 7`, sd)   %>% unlist %>% round(1)
-  ) %>% as.data.frame()
-colnames(mn_sd_tbl) <- c("Grad mean", "Grad sd",
-                         "Assistant Prof mean", "Assistant Prof sd",
-                         "Associate Prof mean", "Associate Prof sd",
-                         "Scientist mean", "Scientist sd")
-
-g_mean <- mean(dat_longer_grp$`quality correlation`) ## global mean
-.col_num_x <- which(colnames(df) == x)
-.col_num_y <- which(colnames(df) == y)
-df_ci <- df[, c(1L, .col_num_x, .col_num_y)] %>% unique.data.frame() %>% as.data.frame()
-ci_bounds_df <- data.frame(NULL)
-for(i in 1:.n_lvls){
-  .idx <- df_ci[, 2] == .x_lvls[i]
-  .vec <- df_ci[.idx, 3]
-  .mn <- mean(.vec)
-  .sd <- sd(.vec)
-  .n <- length(.vec)# n  participants
-  .err <- qnorm(0.975) * .sd / sqrt(.n) ## 1 sided tail for alpha = .05
-  t_val <- (.mn - g_mean) / .sd / sqrt(.n)
-  p_val <- dt(t_val, df = .n -1)
-  ci_bounds_df <- rbind(
-    ci_bounds_df, c(.x_lvls[i], .n, round(.mn - .err, 2), round(.mn, 2),  round(.mn + .err, 2),
-                    round(t_val, 2), round(p_val, 2), paste0(.x_lvls[i], "\n n = ", .n))
-  )
-}
+dat_longer_grp %>%
+  dplyr::select(position_disp, likert_item, response) %>%
+  group_by(position_disp, likert_item) %>%
+  skim %>%
+  yank("numeric") %>%
+  dplyr::select(position_disp, likert_item, mean, sd) %>%
+  pivot_wider(names_from = position_disp, 
+              values_from = c(mean, sd))
+#   
+# dat_longer_wider <- dat_longer %>%
+#   dplyr::select(likert_item, position_disp, response) %>%
+#   #unique.data.frame() %>% 
+#   tidyr::pivot_wider( ## Doesn't like factors
+#     #cols = `source ACM/IEEE DL`:`venue research scope`, #`venue other rank`,
+#     names_from = position_disp, values_from = response
+#   )
+# str(dat_longer)
+# str(dat_longer_wider)
+# 
+# ## this woud be ~ 1/4 of the table when structured
+# mn_sd_tbl <- 
+#   cbind(dat_longer_wider$likert_item,
+#         lapply(dat_longer_wider$`Graduate Student\n n = 11`, mean)        %>% unlist %>% round(1),
+#         lapply(dat_longer_wider$`Graduate Student\n n = 11`, sd)          %>% unlist %>% round(1),
+#         lapply(dat_longer_wider$`Assistant Professor\n n = 7`, mean)      %>% unlist %>% round(1),
+#         lapply(dat_longer_wider$`Assistant Professor\n n = 7`, sd)        %>% unlist %>% round(1),
+#         lapply(dat_longer_wider$`Associate Professor\n n = 12`, mean)     %>% unlist %>% round(1),
+#         lapply(dat_longer_wider$`Associate Professor\n n = 12`, sd)       %>% unlist %>% round(1),
+#         lapply(dat_longer_wider$`Research/Staff Scientist\n n = 7`, mean) %>% unlist %>% round(1),
+#         lapply(dat_longer_wider$`Research/Staff Scientist\n n = 7`, sd)   %>% unlist %>% round(1)
+#   ) %>% as.data.frame()
+# colnames(mn_sd_tbl) <- c("Grad mean", "Grad sd",
+#                          "Assistant Prof mean", "Assistant Prof sd",
+#                          "Associate Prof mean", "Associate Prof sd",
+#                          "Scientist mean", "Scientist sd")
 
 
 ## 3) mixed model -----
-
+#### described in text from the model performance and coeffient table of the summary in `survey_analyses.r`
 
 ## (4) demographic heatmap ------
 
