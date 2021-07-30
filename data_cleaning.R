@@ -131,30 +131,18 @@ clean <-
     ## Other freeform text
     `other comments text` = `Are there any other thoughts or comments you wish to share with us?`
   )
-position_cnt <- table(clean$position)
-clean <- clean %>% mutate(
-  position_disp = case_when(
-    position == position_lvls[1] ~ paste0(position_new_lvls[1], "\n n = ", position_cnt[1]),
-    position == position_lvls[2] ~ paste0(position_new_lvls[2], "\n n = ", position_cnt[2]),
-    position == position_lvls[3] ~ paste0(position_new_lvls[3], "\n n = ", position_cnt[3]),
-    position == position_lvls[4] ~ paste0(position_new_lvls[4], "\n n = ", position_cnt[4]),
-    position == position_lvls[5] ~ paste0(position_new_lvls[5], "\n n = ", position_cnt[5]),
-    position == position_lvls[6] ~ paste0(position_new_lvls[6], "\n n = ", position_cnt[6]),
-    position == position_lvls[7] ~ paste0(position_new_lvls[7], "\n n = ", position_cnt[7]),
-    position == position_lvls[8] ~ paste0(position_new_lvls[8], "\n n = ", position_cnt[8])
-  )
-)
-## reverse level order
+## Add counts to the position levels
+.position_cnt <- table(clean$position)
+.position_lab_cnt <- paste0(position_new_lvls, "\n n = ", .position_cnt)
+clean$position <- plyr::mapvalues(clean$position, position_lvls, .position_lab_cnt)
+## and reverse level order
 clean$position <- factor(clean$position, levels = rev(levels(clean$position)))
 str(clean)
 
-## Pct NA TEXT
-# sum(is.na(clean$`source other text`)) / nrow(clean)
-# sum(is.na(clean$`read other text`))   / nrow(clean)
-# sum(is.na(clean$`venue other text`))  / nrow(clean)
+## Pct NA TEXT fileds
 (sum(is.na(clean$`source other text`)) +
-sum(is.na(clean$`read other text`))   +
-sum(is.na(clean$`venue other text`)) ) / (3*nrow(clean))
+    sum(is.na(clean$`read other text`)) +
+    sum(is.na(clean$`venue other text`)) ) / (3*nrow(clean))
 sum(is.na(clean$`other comments text`)) / nrow(clean)
 
 ## Write data -----

@@ -18,17 +18,6 @@ pos_tbl <- table(dat$position)
 names_to_keep <- names(pos_tbl)[pos_tbl >= 3]
 
 ### OSF analyses section:
-# The analysis process will follow a similar method as used in a related article by Soderberg et al. on the credibility of preprint [1] (which we will acknowledge in our manuscript). This will be based on the R scripts found in their OSF repository [2]. 
-# Overall our process will be the following:
-#   - We will produce Likert plots combined with violin plots containing 95% Confidence Intervals (CIs) of the responses. We will analyse our results with an estimation approach and inference by eye [3,4] 
-# - We will look at correlation of responses with experience as a researcher. For that we will first conduct a Spearman ranked correlation of the Likert scales responses in general and across experience levels. Whether we use years of experience in the field or position as a proxy for "experience" will depend on the demographics of our participants. 
-# - We will create a mixed model regressing responses to the Likert scales. The main effects will be years of experience, position, and a random effect for participants will be included.  
-# 
-# [1] https://doi.org/10.1098/rsos.201520
-# [2] https://osf.io/j7u6z/
-# [3] http://link.springer.com/chapter/10.1007%2F978-3-319-26633-6_13 
-# [4] https://arxiv.org/pdf/2002.07671.pdf 
-
 ## 1) Likerts produced in `figures.r`
 ## 2) Spearman correlation produced in `figures.r`,
 #### - will want need to come up with some form of crossing seniority/experience.
@@ -36,11 +25,11 @@ names_to_keep <- names(pos_tbl)[pos_tbl >= 3]
 ## (4) demographic heatmap; produce below
 ## (5) factor analysis/PCA, produce below
 
-## 0) Pivot longer -----
+## 0) Pivot longer, for mixed model -----
 colnames(dat)
-dat_sub <- dat[, c(1, 4, 36, 5:12, 16:22, 26:31, 34)]
+dat_sub <- dat[, c(1, 4, 5:12, 16:22, 26:31, 34)]
 ## coerce to integer for pivoting
-dat_sub[, 5:25] <- lapply(dat_sub[, 5:25], as.integer)
+dat_sub[, 4:24] <- lapply(dat_sub[, 4:24], as.integer)
 ## Pivot longer
 dat_longer <- dat_sub %>%
   tidyr::pivot_longer( ## Doesn't like factors
@@ -75,20 +64,13 @@ readr::write_rds(dat_longer_grp, "./data/clean_dat_longer_grp.rds")
 colnames(dat_longer)
 base <- lmer(response ~ position + `years vis experience` + likert_question + (1 | participant_rownum) + (1 | likert_item), dat_longer)
 pos.exp <- lmer(response ~ position * `years vis experience` + likert_question + (1 | participant_rownum) + (1 | likert_item), dat_longer)
-
-# quality.pos <- lmer(`quality correlation` ~ position + `years vis experience` +
-#                       (1 | participant_rownum) + likert_question, dat_longer)
-# quality.yrs <- lmer(`years vis experience` ~ position + `years vis experience` +
-#                       (1 | participant_rownum) + likert_question, dat_longer)
 model_ls <- list(base = base, pos.exp = pos.exp)
-                 # ,quality.pos = quality.pos,
-                 # quality.yrs = quality.yrs)
 ### Validate that the error/residuals are fine to support application of bootstraping
 # Plot the binned residuals as recommended by Gelman and Hill (2007)
 require("arm")
 par(bg="white", cex=1.2, las=1)
 binnedplot(predict(base), resid(base), cex.pts=1, col.int="black")
-binnedplot(predict(quality), resid(quality), cex.pts=1, col.int="black")
+binnedplot(predict(pos.exp), resid(pos.exp), cex.pts=1, col.int="black")
 ## Good, residuals are homoskedastic
 
 
@@ -136,7 +118,7 @@ summary(pos.exp)$coefficients
 
 ## (5) Factor analysis/PCA ------
 str(dat_sub)
-dat_num <- cbind(as.integer(dat_sub$position), dat_sub[, 4:25])# %>% spinifex::scale_01()
+dat_num <- cbind(as.integer(dat_sub$position), dat_sub[, 4:24])# %>% spinifex::scale_01()
 (pca_obj <- prcomp(dat_num))
 
 psych::fa.parallel(cor(dat_num, method = "spearman"), n.obs = nrow(dat_num)) ## 8 on ranked cor
@@ -152,7 +134,6 @@ fa.diagram(fa2)
 fa.diagram(fa7)
 
 ### Intrinsic dimension estimations with Rdimtools.
-
 #' @example 
 #' dat <- as.matrix(tourr::flea[, 1:6])
 #' ide_vect(data = dat, inc_slow = FALSE)
