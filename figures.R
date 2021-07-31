@@ -142,14 +142,15 @@ position_gt <- position_table %>%
   ) %>%
   fmt_number(columns = 2:9, decimals = 2) %>%
   cols_merge(columns = vars(`mean_Graduate Student\n n = 11`, `sd_Graduate Student\n n = 11`), pattern = '{1} ({2})') %>%
-  cols_merge(columns = vars(`mean_Assistant Professor\n n = 7`,  `sd_Assistant Professor\n n = 7`), pattern = '{1} ({2})') %>%
   cols_merge(columns = vars(`mean_Associate Professor\n n = 12`, `sd_Associate Professor\n n = 12`), pattern = '{1} ({2})') %>%
+  
+  cols_merge(columns = vars(`mean_Assistant Professor\n n = 7`,  `sd_Assistant Professor\n n = 7`), pattern = '{1} ({2})') %>%
   cols_merge(columns = vars(`mean_Research/Staff Scientist\n n = 7`, `sd_Research/Staff Scientist\n n = 7`), pattern = '{1} ({2})') %>%
   tab_spanner("Position", columns = `mean_Graduate Student\n n = 11`:`mean_Research/Staff Scientist\n n = 7`) %>% 
   cols_label(
     `mean_Graduate Student\n n = 11` = "Graduate Student, n = 11",
-    `mean_Assistant Professor\n n = 7` = "Assistant Professor, n = 7",
     `mean_Associate Professor\n n = 12` = "Associate Professor, n = 12",
+    `mean_Assistant Professor\n n = 7` = "Assistant Professor, n = 7",
     `mean_Research/Staff Scientist\n n = 7` = "Research/Staff Scientist, n = 7") %>% 
   cols_align(align = 'center', columns = starts_with('mean'))
 gtsave(position_gt, filename = './figures/position_gt.png')

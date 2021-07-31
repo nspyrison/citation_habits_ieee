@@ -119,12 +119,14 @@ summary(pos.exp)$coefficients
 ## (5) Factor analysis/PCA ------
 str(dat_sub)
 dat_num <- cbind(as.integer(dat_sub$position), dat_sub[, 4:24])# %>% spinifex::scale_01()
-(pca_obj <- prcomp(dat_num))
+(pca_obj <- prcomp(dat_sub))
 
-psych::fa.parallel(cor(dat_num, method = "spearman"), n.obs = nrow(dat_num)) ## 8 on ranked cor
-psych::fa.parallel(dat_num) ## 2 on data
+psych::fa.parallel(cor(dat_sub[, 4:24], method = "spearman"), n.obs = nrow(dat_sub[, 4:24])) ## 8 on ranked cor
+psych::fa.parallel(dat_sub[, 4:24]) ## 2 on data
 
-fa2 <- fa(dat_num,
+fa4 <- fa(dat_num,
+          nfactors = 2, rotate = 'oblimin')
+fa2 <- fa(cor(dat_sub[, 4:24],
           nfactors = 2, rotate = 'oblimin')
 fa7 <- fa(cor(dat_num, method = "spearman"),
           nfactors = 7, rotate = 'oblimin')
