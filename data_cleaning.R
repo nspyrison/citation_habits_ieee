@@ -59,7 +59,7 @@ clean <-
     `source peer/mentor` = factor(
       `How often do you use the following sources when finding papers related to your research? [Suggestions from peers/mentors]`,
       levels = s1_lvls, ordered = TRUE, exclude = NA),
-    `source journal/confrence` = factor(
+    `source journal/conference` = factor(
       `How often do you use the following sources when finding papers related to your research? [Journal issues/conference proceedings]`,
       levels = s1_lvls, ordered = TRUE, exclude = NA),
     `source Google Scholar` = factor(

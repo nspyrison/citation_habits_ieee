@@ -52,7 +52,7 @@ likert_s3 <- s3 %>% as.data.frame() %>% likert()
 ## saving
 likert_out1 <- plot(likert_s1) + 
   ggtitle("Likert scale 1, frequency of use when sourcing papers during liturature review") +
-  theme(legend.title = element_blank()) 
+  theme(legend.title = element_blank())
 likert_out2 <- plot(likert_s2) +
   ggtitle("Likert scale 2, importance for deciding wether or not to read in detail") +
   theme(legend.title = element_blank())
@@ -103,6 +103,7 @@ my_ggpubr_violin <- function(df = dat_longer_grp, x = "position",
     my_theme +
     theme(legend.position = "off") +
     ggtitle(title, subtitle) +
+    ylim(0, 5) +
     labs(x = "Position",
          y = "Likert item: subjective correlation of a venue and its papers' quality \n [1 = no corrlation, 5 = Strong positive correlation]")
 
@@ -125,7 +126,7 @@ position_table <- dat_longer_grp %>%
   skim %>%
   yank("numeric") %>%
   dplyr::select(position, likert_item, mean, sd) %>%
-  pivot_wider(names_from = position, 
+  pivot_wider(names_from = position,
               values_from = c(mean, sd))
 colnames(position_table)[1] <- "Likert item"
 
