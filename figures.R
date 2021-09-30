@@ -79,8 +79,10 @@ my_theme <- list(
         legend.box = "vertical",
         legend.margin = margin(-6L))
 )
-my_ggpubr_violin <- function(df = dat_longer_grp, x = "position",
-                             y = "quality correlation", title = waiver(), subtitle = waiver()){
+my_ggpubr_violin <- function(
+  df = dat_longer_grp, x = "position",
+  y = "quality correlation", title = waiver(), subtitle = waiver(),
+  adjust = 1){
   ## Find height of global significance test text.
   .x_lvls <- df %>% pull({{x}}) %>% levels()
   .y_range <- diff(range(df[y]))
@@ -95,7 +97,8 @@ my_ggpubr_violin <- function(df = dat_longer_grp, x = "position",
   ## Plot
   ggviolin(df_ci, x = x, y = y, fill = x, alpha = .6,
            add = c("mean", "mean_ci"), ## Black circle, can change size, but not shape or alpha?
-           draw_quantiles = c(.25, .5, .75)) +
+           draw_quantiles = c(.25, .5, .75),
+           trim = TRUE, adjust = adjust) +
     stat_compare_means( ## Global test
       label.y = .lab_y, label.x = .lab_x,
       aes(label = paste0("Kruskal gobal rank test, p-value  = ", ..p.format..))) + ## custom label
@@ -108,7 +111,7 @@ my_ggpubr_violin <- function(df = dat_longer_grp, x = "position",
          y = "Likert item: subjective correlation of a venue and its papers' quality \n [1 = no corrlation, 5 = Strong positive correlation]")
 
 }
-(quality_violins <- my_ggpubr_violin())
+(quality_violins <- my_ggpubr_violin(adjust = .1))
 ggsave("quality_violins.pdf", quality_violins, "pdf", "figures",
        width = 6, height = 4, units = "in")
 
